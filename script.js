@@ -40,6 +40,48 @@ function round1(value) {
   return Math.round(value * 10) / 10;
 }
 
+async function apiFetch(url) {
+  const res = await fetch(url, {
+    headers: {
+      Authorization: CONFIG.apiKey
+    }
+  });
+
+  if (!res.ok) {
+    throw new Error(`${res.status} ${res.statusText}`);
+  }
+
+  return await res.json();
+}
+
+async function fetchCurrentMMR() {
+  const url =
+    `https://api.henrikdev.xyz/valorant/v2/mmr/${CONFIG.region}/` +
+    `${encodeURIComponent(CONFIG.riotName)}/` +
+    `${encodeURIComponent(CONFIG.riotTag)}`;
+
+  return await apiFetch(url);
+}
+
+async function fetchMMRHistory() {
+  const url =
+    `https://api.henrikdev.xyz/valorant/v1/mmr-history/${CONFIG.region}/` +
+    `${encodeURIComponent(CONFIG.riotName)}/` +
+    `${encodeURIComponent(CONFIG.riotTag)}`;
+
+  return await apiFetch(url);
+}
+
+async function fetchMatches() {
+  const url =
+    `https://api.henrikdev.xyz/valorant/v3/matches/${CONFIG.region}/` +
+    `${encodeURIComponent(CONFIG.riotName)}/` +
+    `${encodeURIComponent(CONFIG.riotTag)}` +
+    `?mode=competitive&size=10`;
+
+  return await apiFetch(url);
+}
+
 function calculateProgress(currentRank, currentRR, averageWinRR) {
   const today = new Date();
   const targetDate = new Date(CONFIG.targetDate);
@@ -81,63 +123,6 @@ function calculateProgress(currentRank, currentRR, averageWinRR) {
     dailyRequiredWins,
     weeklyRequiredWins
   };
-}
-
-async function fetchCurrentMMR() {
-  const url =
-    `https://api.henrikdev.xyz/valorant/v2/mmr/${CONFIG.region}/` +
-    `${encodeURIComponent(CONFIG.riotName)}/` +
-    `${encodeURIComponent(CONFIG.riotTag)}`;
-
-  const res = await fetch(url, {
-    headers: {
-      Authorization: CONFIG.apiKey
-    }
-  });
-
-  if (!res.ok) {
-    throw new Error("MMR取得に失敗しました");
-  }
-
-  return await res.json();
-}
-
-async function fetchMMRHistory() {
-  const url =
-    `https://api.henrikdev.xyz/valorant/v1/mmr-history/${CONFIG.region}/` +
-    `${encodeURIComponent(CONFIG.riotName)}/` +
-    `${encodeURIComponent(CONFIG.riotTag)}`;
-
-  const res = await fetch(url, {
-    headers: {
-      Authorization: CONFIG.apiKey
-    }
-  });
-
-  if (!res.ok) {
-    throw new Error("MMR履歴取得に失敗しました");
-  }
-
-  return await res.json();
-}
-
-async function fetchMatches() {
-  const url =
-    `https://api.henrikdev.xyz/valorant/v3/matches/${CONFIG.region}/` +
-    `${encodeURIComponent(CONFIG.riotName)}/` +
-    `${encodeURIComponent(CONFIG.riotTag)}`;
-
-  const res = await fetch(url, {
-    headers: {
-      Authorization: CONFIG.apiKey
-    }
-  });
-
-  if (!res.ok) {
-    throw new Error("試合履歴取得に失敗しました");
-  }
-
-  return await res.json();
 }
 
 function getSeasonStats(historyJson) {
@@ -184,15 +169,24 @@ function getKD(matchesJson) {
   for (const match of matches) {
     const players = match.players?.all_players || [];
 
-    const me = players.find(player =>
-      player.name?.toLowerCase() === CONFIG.riotName.toLowerCase() &&
-      player.tag?.toLowerCase() === CONFIG.riotTag.toLowerCase()
-    );
+    const me = players.find(player => {
+      const nameMatch =
+        player.name?.toLowerCase() === CONFIG.riotName.toLowerCase();
+
+      const tagMatch =
+        player.tag?.toLowerCase() === CONFIG.riotTag.toLowerCase();
+
+      return nameMatch && tagMatch;
+    });
 
     if (!me) continue;
 
     kills += me.stats?.kills || 0;
     deaths += me.stats?.deaths || 0;
+  }
+
+  if (kills === 0 && deaths === 0) {
+    return null;
   }
 
   if (deaths === 0) {
@@ -202,13 +196,15 @@ function getKD(matchesJson) {
   return (kills / deaths).toFixed(2);
 }
 
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
 async function main() {
   try {
-    const [mmrJson, historyJson, matchesJson] = await Promise.all([
-      fetchCurrentMMR(),
-      fetchMMRHistory(),
-      fetchMatches()
-    ]);
+    const mmrJson = await fetchCurrentMMR();
+    const historyJson = await fetchMMRHistory();
 
     const currentData = mmrJson.data.current_data;
 
@@ -216,7 +212,6 @@ async function main() {
     const currentRR = currentData.ranking_in_tier;
 
     const seasonStats = getSeasonStats(historyJson);
-    const kd = getKD(matchesJson);
 
     const result = calculateProgress(
       currentRank,
@@ -224,56 +219,48 @@ async function main() {
       seasonStats.avgWinRR
     );
 
-    document.getElementById("topRank").textContent = currentRank;
-    document.getElementById("topRR").textContent = `${currentRR} RR`;
-    document.getElementById("topWinRate").textContent = `${seasonStats.winRate}%`;
-    document.getElementById("topKD").textContent = kd;
+    setText("topRank", currentRank);
+    setText("topRR", `${currentRR} RR`);
+    setText("topWinRate", `${seasonStats.winRate}%`);
 
-    document.getElementById("challengeDays").textContent =
-      `${result.remainingDays}日`;
+    setText("challengeDays", `${result.remainingDays}日`);
+    setText("challengeRequiredRR", `${result.requiredRR} RR`);
 
-    document.getElementById("challengeRequiredRR").textContent =
-      `${result.requiredRR} RR`;
+    setText("dailyRequiredRR", `${result.dailyRequiredRR} RR/日`);
+    setText("dailyRequiredWins", `${result.dailyRequiredWins} 勝/日`);
 
-    document.getElementById("dailyRequiredRR").textContent =
-      `${result.dailyRequiredRR} RR/日`;
+    setText("weeklyRequiredRR", `${result.weeklyRequiredRR} RR/週`);
+    setText("weeklyRequiredWins", `${result.weeklyRequiredWins} 勝/週`);
 
-    document.getElementById("dailyRequiredWins").textContent =
-      `${result.dailyRequiredWins} 勝/日`;
+    setText("seasonMatches", `${seasonStats.matches}試合`);
+    setText("seasonWinRate", `${seasonStats.winRate}%`);
+    setText("seasonWins", `${seasonStats.wins}勝`);
+    setText("seasonLosses", `${seasonStats.losses}敗`);
+    setText("seasonAvgWinRR", `+${seasonStats.avgWinRR}RR`);
+    setText("seasonAvgLossRR", `${seasonStats.avgLossRR}RR`);
 
-    document.getElementById("weeklyRequiredRR").textContent =
-      `${result.weeklyRequiredRR} RR/週`;
+    setText(
+      "message",
+      `勝利時平均 +${seasonStats.avgWinRR}RR で、ダイヤモンドチャレンジ達成までの必要ペースを計算しています。`
+    );
 
-    document.getElementById("weeklyRequiredWins").textContent =
-      `${result.weeklyRequiredWins} 勝/週`;
+    try {
+      const matchesJson = await fetchMatches();
+      const kd = getKD(matchesJson);
 
-    document.getElementById("seasonMatches").textContent =
-      `${seasonStats.matches}試合`;
-
-    document.getElementById("seasonWins").textContent =
-      `${seasonStats.wins}勝`;
-
-    document.getElementById("seasonLosses").textContent =
-      `${seasonStats.losses}敗`;
-
-    document.getElementById("seasonWinRate").textContent =
-      `${seasonStats.winRate}%`;
-
-    document.getElementById("seasonAvgWinRR").textContent =
-      `+${seasonStats.avgWinRR}RR`;
-
-    document.getElementById("seasonAvgLossRR").textContent =
-      `${seasonStats.avgLossRR}RR`;
-
-    document.getElementById("message").textContent =
-      result.requiredRR === 0
-        ? "目標達成済みです。次はDiamond 2を目指せます。"
-        : `勝利時平均 +${seasonStats.avgWinRR}RR で、ダイヤモンドチャレンジ達成までの必要ペースを計算しています。`;
+      setText("topKD", kd ? kd : "取得不可");
+    } catch (kdError) {
+      console.warn("KD取得だけ失敗:", kdError);
+      setText("topKD", "取得失敗");
+    }
   } catch (error) {
     console.error(error);
 
-    document.getElementById("message").textContent =
-      "ランク情報の取得に失敗しました。Riot ID、タグ、APIキー、regionを確認してください。";
+    setText("message", "ランク情報の取得に失敗しました。Riot ID、タグ、APIキー、regionを確認してください。");
+    setText("topRank", "取得失敗");
+    setText("topRR", "- RR");
+    setText("topWinRate", "-");
+    setText("topKD", "-");
   }
 }
 
