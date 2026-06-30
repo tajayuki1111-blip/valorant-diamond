@@ -12,7 +12,7 @@ const CONFIG = {
 
   // 今Actの試合履歴を何試合分見るか
   // 足りない場合は 50 に変更
-  matchSize: 30
+  matchSize: 50
 };
 
 const rankPoints = {
