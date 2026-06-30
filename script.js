@@ -7,8 +7,12 @@ const CONFIG = {
   targetRank: "Diamond 1",
   targetDate: "2026-09-01T00:00:00+09:00",
 
-  // 今Act開始日：Season 2026 Act 4 / AP・日本向け
-  actStartDate: "2026-06-24T00:00:00+09:00"
+  // 今Act開始日
+  actStartDate: "2026-06-24T00:00:00+09:00",
+
+  // 今Actの試合履歴を何試合分見るか
+  // 足りない場合は 50 に変更
+  matchSize: 30
 };
 
 const rankPoints = {
@@ -48,6 +52,10 @@ function setText(id, text) {
   if (el) el.textContent = text;
 }
 
+function formatDate(date) {
+  return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+}
+
 async function apiFetch(url) {
   const res = await fetch(url, {
     headers: {
@@ -85,18 +93,34 @@ async function fetchMatches() {
     `https://api.henrikdev.xyz/valorant/v3/matches/${CONFIG.region}/` +
     `${encodeURIComponent(CONFIG.riotName)}/` +
     `${encodeURIComponent(CONFIG.riotTag)}` +
-    `?mode=competitive&size=10`;
+    `?mode=competitive&size=${CONFIG.matchSize}`;
 
   return await apiFetch(url);
 }
 
-function getGameDate(game) {
+function getGameDateFromHistory(game) {
   const rawDate =
     game.date ||
     game.date_raw ||
     game.started_at ||
     game.match_start ||
     game.match_start_time;
+
+  if (!rawDate) return null;
+
+  const date = new Date(rawDate);
+  return isNaN(date) ? null : date;
+}
+
+function getMatchDate(match) {
+  const metadata = match.metadata || {};
+
+  const rawDate =
+    metadata.started_at ||
+    metadata.game_start ||
+    metadata.game_start_patched ||
+    metadata.match_start_time ||
+    metadata.game_start_time;
 
   if (!rawDate) return null;
 
@@ -131,10 +155,14 @@ function calculateProgress(currentRank, currentRR, averageWinRR) {
     averageWinRR > 0 ? Math.ceil(requiredRR / averageWinRR) : 0;
 
   const dailyRequiredWins =
-    remainingDays > 0 ? round1(totalRequiredWins / remainingDays) : totalRequiredWins;
+    remainingDays > 0
+      ? round1(totalRequiredWins / remainingDays)
+      : totalRequiredWins;
 
   const weeklyRequiredWins =
-    remainingWeeks > 0 ? round1(totalRequiredWins / remainingWeeks) : totalRequiredWins;
+    remainingWeeks > 0
+      ? round1(totalRequiredWins / remainingWeeks)
+      : totalRequiredWins;
 
   return {
     requiredRR,
@@ -147,13 +175,13 @@ function calculateProgress(currentRank, currentRR, averageWinRR) {
   };
 }
 
-function getActStats(historyJson) {
+function getRRStats(historyJson) {
   const games = historyJson.data || [];
   const actStart = new Date(CONFIG.actStartDate);
 
   const validGames = games.filter(game => {
     const rr = game.mmr_change_to_last_game;
-    const date = getGameDate(game);
+    const date = getGameDateFromHistory(game);
 
     return (
       typeof rr === "number" &&
@@ -168,11 +196,6 @@ function getActStats(historyJson) {
   const wins = rrChanges.filter(rr => rr > 0);
   const losses = rrChanges.filter(rr => rr < 0);
 
-  const matches = wins.length + losses.length;
-
-  const winRate =
-    matches > 0 ? round1((wins.length / matches) * 100) : 0;
-
   const avgWinRR =
     wins.length > 0
       ? round1(wins.reduce((sum, rr) => sum + rr, 0) / wins.length)
@@ -183,51 +206,27 @@ function getActStats(historyJson) {
       ? round1(losses.reduce((sum, rr) => sum + rr, 0) / losses.length)
       : 0;
 
-  const dates = validGames
-    .map(getGameDate)
-    .filter(Boolean);
-
-  let periodText = "今Act";
-
-  if (dates.length > 0) {
-    const oldest = new Date(Math.min(...dates));
-    const newest = new Date(Math.max(...dates));
-
-    periodText =
-      `${oldest.getFullYear()}/${oldest.getMonth() + 1}/${oldest.getDate()}` +
-      `〜` +
-      `${newest.getFullYear()}/${newest.getMonth() + 1}/${newest.getDate()}`;
-  }
-
   return {
-    matches,
-    wins: wins.length,
-    losses: losses.length,
-    winRate,
     avgWinRR,
-    avgLossRR,
-    periodText
+    avgLossRR
   };
 }
 
-function getKD(matchesJson) {
+function getActMatchStats(matchesJson) {
   const matches = matchesJson.data || [];
   const actStart = new Date(CONFIG.actStartDate);
 
+  let matchCount = 0;
+  let wins = 0;
+  let losses = 0;
   let kills = 0;
   let deaths = 0;
 
   for (const match of matches) {
-    const metadata = match.metadata || {};
-    const matchDateRaw =
-      metadata.started_at ||
-      metadata.game_start ||
-      metadata.game_start_patched ||
-      metadata.match_start_time;
+    const matchDate = getMatchDate(match);
 
-    if (matchDateRaw) {
-      const matchDate = new Date(matchDateRaw);
-      if (!isNaN(matchDate) && matchDate < actStart) continue;
+    if (matchDate && matchDate < actStart) {
+      continue;
     }
 
     const players = match.players?.all_players || [];
@@ -244,42 +243,73 @@ function getKD(matchesJson) {
 
     if (!me) continue;
 
+    const myTeam = me.team;
+    const teams = match.teams;
+
+    let didWin = null;
+
+    if (teams?.red && teams?.blue) {
+      if (myTeam === "Red") didWin = teams.red.has_won;
+      if (myTeam === "Blue") didWin = teams.blue.has_won;
+    }
+
+    if (didWin === true) {
+      wins += 1;
+      matchCount += 1;
+    } else if (didWin === false) {
+      losses += 1;
+      matchCount += 1;
+    } else {
+      continue;
+    }
+
     kills += me.stats?.kills || 0;
     deaths += me.stats?.deaths || 0;
   }
 
-  if (kills === 0 && deaths === 0) {
-    return null;
-  }
+  const winRate =
+    matchCount > 0 ? round1((wins / matchCount) * 100) : 0;
 
-  if (deaths === 0) {
-    return kills > 0 ? kills.toFixed(2) : "0.00";
-  }
+  const kd =
+    deaths > 0
+      ? (kills / deaths).toFixed(2)
+      : kills > 0
+        ? kills.toFixed(2)
+        : "0.00";
 
-  return (kills / deaths).toFixed(2);
+  return {
+    matches: matchCount,
+    wins,
+    losses,
+    winRate,
+    kd
+  };
 }
 
 async function main() {
   try {
     const mmrJson = await fetchCurrentMMR();
     const historyJson = await fetchMMRHistory();
+    const matchesJson = await fetchMatches();
 
     const currentData = mmrJson.data.current_data;
 
     const currentRank = currentData.currenttierpatched;
     const currentRR = currentData.ranking_in_tier;
 
-    const actStats = getActStats(historyJson);
+    const rrStats = getRRStats(historyJson);
+    const actStats = getActMatchStats(matchesJson);
 
     const result = calculateProgress(
       currentRank,
       currentRR,
-      actStats.avgWinRR
+      rrStats.avgWinRR
     );
 
     setText("topRank", currentRank);
     setText("topRR", `${currentRR} RR`);
     setText("topWinRate", `${actStats.winRate}%`);
+    setText("topKD", actStats.kd);
 
     setText("challengeDays", `${result.remainingDays}日`);
     setText("challengeRequiredRR", `${result.requiredRR} RR`);
@@ -294,24 +324,22 @@ async function main() {
     setText("seasonWinRate", `${actStats.winRate}%`);
     setText("seasonWins", `${actStats.wins}勝`);
     setText("seasonLosses", `${actStats.losses}敗`);
-    setText("seasonAvgWinRR", `+${actStats.avgWinRR}RR`);
-    setText("seasonAvgLossRR", `${actStats.avgLossRR}RR`);
-    setText("seasonPeriod", `集計期間：${actStats.periodText}`);
+
+    setText("seasonAvgWinRR", `+${rrStats.avgWinRR}RR`);
+    setText("seasonAvgLossRR", `${rrStats.avgLossRR}RR`);
+
+    const today = new Date();
+    const actStart = new Date(CONFIG.actStartDate);
+
+    setText(
+      "seasonPeriod",
+      `集計期間：${formatDate(actStart)}〜${formatDate(today)}`
+    );
 
     setText(
       "message",
-      `今Actの勝利時平均 +${actStats.avgWinRR}RR で、ダイヤモンドチャレンジ達成までの必要ペースを計算しています。`
+      `今Actの勝率・KD・試合数はマッチ履歴から計算しています。必要勝利数は勝利時平均 +${rrStats.avgWinRR}RR で計算しています。`
     );
-
-    try {
-      const matchesJson = await fetchMatches();
-      const kd = getKD(matchesJson);
-
-      setText("topKD", kd ? kd : "取得不可");
-    } catch (kdError) {
-      console.warn("KD取得だけ失敗:", kdError);
-      setText("topKD", "取得失敗");
-    }
   } catch (error) {
     console.error(error);
 
