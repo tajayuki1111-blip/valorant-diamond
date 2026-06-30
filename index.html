@@ -7,39 +7,34 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main class="page">
+  <main class="container">
     <section class="card">
-      <div class="header">
-        <p class="eyebrow">VALORANT RANK CHALLENGE</p>
-        <h1>ダイヤモンド<br><span>チャレンジ</span></h1>
-        <p class="subtitle">9月1日までに Diamond 1 到達を目指す進捗ボード</p>
-      </div>
+      <p class="label">VALORANT RANK CHALLENGE</p>
+      <h1>ダイヤモンド<br><span>チャレンジ</span></h1>
 
-      <section class="hero-status">
-        <div class="rank-box">
+      <section class="top-panel">
+        <div class="rank-main">
           <p>現在ランク</p>
           <strong id="topRank">取得中...</strong>
           <span id="topRR">- RR</span>
         </div>
 
-        <div class="metric-box">
-          <p>勝率</p>
-          <strong id="topWinRate">-</strong>
-        </div>
-
-        <div class="metric-box">
-          <p>KD</p>
-          <strong id="topKD">-</strong>
+        <div class="top-mini">
+          <div>
+            <p>勝率</p>
+            <strong id="topWinRate">-</strong>
+          </div>
+          <div>
+            <p>KD</p>
+            <strong id="topKD">-</strong>
+          </div>
         </div>
       </section>
 
-      <section class="challenge-card">
-        <div class="section-title">
-          <p>CHALLENGE PROGRESS</p>
-          <h2>チャレンジ達成まで</h2>
-        </div>
+      <section class="challenge">
+        <p class="challenge-label">チャレンジ達成まで</p>
 
-        <div class="big-grid">
+        <div class="main-grid">
           <div>
             <p>残り日数</p>
             <strong id="challengeDays">-日</strong>
@@ -50,47 +45,46 @@
           </div>
         </div>
 
-        <div class="pace">
-          <div class="pace-block">
-            <h3>1日ペース</h3>
-            <div class="small-grid">
-              <div>
-                <p>必要平均RR</p>
-                <strong id="dailyRequiredRR">- RR/日</strong>
-              </div>
-              <div>
-                <p>必要勝利数</p>
-                <strong id="dailyRequiredWins">- 勝/日</strong>
-              </div>
+        <div class="pace-block">
+          <h2>1日ペース</h2>
+          <div class="grid">
+            <div>
+              <p>必要平均RR</p>
+              <strong id="dailyRequiredRR">- RR/日</strong>
+            </div>
+            <div>
+              <p>必要勝利数</p>
+              <strong id="dailyRequiredWins">- 勝/日</strong>
             </div>
           </div>
+        </div>
 
-          <div class="pace-block">
-            <h3>1週間ペース</h3>
-            <div class="small-grid">
-              <div>
-                <p>必要平均RR</p>
-                <strong id="weeklyRequiredRR">- RR/週</strong>
-              </div>
-              <div>
-                <p>必要勝利数</p>
-                <strong id="weeklyRequiredWins">- 勝/週</strong>
-              </div>
+        <div class="pace-block">
+          <h2>1週間ペース</h2>
+          <div class="grid">
+            <div>
+              <p>必要平均RR</p>
+              <strong id="weeklyRequiredRR">- RR/週</strong>
+            </div>
+            <div>
+              <p>必要勝利数</p>
+              <strong id="weeklyRequiredWins">- 勝/週</strong>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="season-card">
-        <div class="section-title">
-          <p>RECENT COMPETITIVE STATS</p>
-          <h2>直近コンペ戦績</h2>
-        </div>
+      <section class="season">
+        <h2>直近コンペ戦績</h2>
 
-        <div class="stats-grid">
+        <div class="grid">
           <div>
             <p>試合数</p>
             <strong id="seasonMatches">-</strong>
+          </div>
+          <div>
+            <p>勝率</p>
+            <strong id="seasonWinRate">-</strong>
           </div>
           <div>
             <p>勝利</p>
@@ -99,10 +93,6 @@
           <div>
             <p>敗北</p>
             <strong id="seasonLosses">-</strong>
-          </div>
-          <div>
-            <p>勝率</p>
-            <strong id="seasonWinRate">-</strong>
           </div>
           <div>
             <p>勝利時平均RR</p>
