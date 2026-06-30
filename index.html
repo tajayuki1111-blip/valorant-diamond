@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VALORANT Diamond Challenge</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <p class="label">VALORANT RANK CHALLENGE</p>
+      <h1>9/1までに<br><span>Diamond 1</span></h1>
+
+      <div class="status">
+        <div>
+          <p>現在ランク</p>
+          <strong id="currentRank">取得中...</strong>
+        </div>
+        <div>
+          <p>現在RR</p>
+          <strong id="currentRR">-</strong>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <p>残り日数</p>
+          <strong id="remainingDays">-</strong>
+        </div>
+        <div>
+          <p>必要RR</p>
+          <strong id="requiredRR">-</strong>
+        </div>
+        <div>
+          <p>1日平均</p>
+          <strong id="requiredPerDay">-</strong>
+        </div>
+        <div>
+          <p>必要勝利数</p>
+          <strong id="requiredWins">-</strong>
+        </div>
+      </div>
+
+      <div class="season">
+        <h2>今シーズン戦績</h2>
+
+        <div class="grid">
+          <div>
+            <p>試合数</p>
+            <strong id="seasonMatches">-</strong>
+          </div>
+          <div>
+            <p>勝率</p>
+            <strong id="seasonWinRate">-</strong>
+          </div>
+          <div>
+            <p>勝利</p>
+            <strong id="seasonWins">-</strong>
+          </div>
+          <div>
+            <p>敗北</p>
+            <strong id="seasonLosses">-</strong>
+          </div>
+          <div>
+            <p>勝利時平均RR</p>
+            <strong id="seasonAvgWinRR">-</strong>
+          </div>
+          <div>
+            <p>敗北時平均RR</p>
+            <strong id="seasonAvgLossRR">-</strong>
+          </div>
+        </div>
+      </div>
+
+      <p class="note" id="message">データを取得しています。</p>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
