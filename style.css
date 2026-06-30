@@ -151,6 +151,12 @@ h1 span {
   margin-top: 24px;
 }
 
+.period {
+  margin: -4px 0 12px;
+  color: #9aa4af;
+  font-size: 13px;
+}
+
 .note {
   margin-top: 20px;
   color: #c9d1d9;
