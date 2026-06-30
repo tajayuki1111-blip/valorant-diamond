@@ -3,56 +3,94 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VALORANT Diamond Challenge</title>
+  <title>ダイヤモンドチャレンジ</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main class="container">
+  <main class="page">
     <section class="card">
-      <p class="label">VALORANT RANK CHALLENGE</p>
-      <h1>9/1までに<br><span>Diamond 1</span></h1>
+      <div class="header">
+        <p class="eyebrow">VALORANT RANK CHALLENGE</p>
+        <h1>ダイヤモンド<br><span>チャレンジ</span></h1>
+        <p class="subtitle">9月1日までに Diamond 1 到達を目指す進捗ボード</p>
+      </div>
 
-      <div class="status">
-        <div>
+      <section class="hero-status">
+        <div class="rank-box">
           <p>現在ランク</p>
-          <strong id="currentRank">取得中...</strong>
+          <strong id="topRank">取得中...</strong>
+          <span id="topRR">- RR</span>
         </div>
-        <div>
-          <p>現在RR</p>
-          <strong id="currentRR">-</strong>
-        </div>
-      </div>
 
-      <div class="grid">
-        <div>
-          <p>残り日数</p>
-          <strong id="remainingDays">-</strong>
+        <div class="metric-box">
+          <p>勝率</p>
+          <strong id="topWinRate">-</strong>
         </div>
-        <div>
-          <p>必要RR</p>
-          <strong id="requiredRR">-</strong>
-        </div>
-        <div>
-          <p>1日平均</p>
-          <strong id="requiredPerDay">-</strong>
-        </div>
-        <div>
-          <p>必要勝利数</p>
-          <strong id="requiredWins">-</strong>
-        </div>
-      </div>
 
-      <div class="season">
-        <h2>今シーズン戦績</h2>
+        <div class="metric-box">
+          <p>KD</p>
+          <strong id="topKD">-</strong>
+        </div>
+      </section>
 
-        <div class="grid">
+      <section class="challenge-card">
+        <div class="section-title">
+          <p>CHALLENGE PROGRESS</p>
+          <h2>チャレンジ達成まで</h2>
+        </div>
+
+        <div class="big-grid">
+          <div>
+            <p>残り日数</p>
+            <strong id="challengeDays">-日</strong>
+          </div>
+          <div>
+            <p>必要RR</p>
+            <strong id="challengeRequiredRR">- RR</strong>
+          </div>
+        </div>
+
+        <div class="pace">
+          <div class="pace-block">
+            <h3>1日ペース</h3>
+            <div class="small-grid">
+              <div>
+                <p>必要平均RR</p>
+                <strong id="dailyRequiredRR">- RR/日</strong>
+              </div>
+              <div>
+                <p>必要勝利数</p>
+                <strong id="dailyRequiredWins">- 勝/日</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="pace-block">
+            <h3>1週間ペース</h3>
+            <div class="small-grid">
+              <div>
+                <p>必要平均RR</p>
+                <strong id="weeklyRequiredRR">- RR/週</strong>
+              </div>
+              <div>
+                <p>必要勝利数</p>
+                <strong id="weeklyRequiredWins">- 勝/週</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="season-card">
+        <div class="section-title">
+          <p>RECENT COMPETITIVE STATS</p>
+          <h2>直近コンペ戦績</h2>
+        </div>
+
+        <div class="stats-grid">
           <div>
             <p>試合数</p>
             <strong id="seasonMatches">-</strong>
-          </div>
-          <div>
-            <p>勝率</p>
-            <strong id="seasonWinRate">-</strong>
           </div>
           <div>
             <p>勝利</p>
@@ -63,6 +101,10 @@
             <strong id="seasonLosses">-</strong>
           </div>
           <div>
+            <p>勝率</p>
+            <strong id="seasonWinRate">-</strong>
+          </div>
+          <div>
             <p>勝利時平均RR</p>
             <strong id="seasonAvgWinRR">-</strong>
           </div>
@@ -71,7 +113,7 @@
             <strong id="seasonAvgLossRR">-</strong>
           </div>
         </div>
-      </div>
+      </section>
 
       <p class="note" id="message">データを取得しています。</p>
     </section>
