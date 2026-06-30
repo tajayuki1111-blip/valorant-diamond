@@ -2,31 +2,16 @@
   box-sizing: border-box;
 }
 
-:root {
-  --bg: #070b12;
-  --card: rgba(16, 24, 34, 0.92);
-  --card-light: rgba(255, 255, 255, 0.06);
-  --card-strong: rgba(255, 70, 85, 0.14);
-  --border: rgba(255, 255, 255, 0.09);
-  --border-red: rgba(255, 70, 85, 0.35);
-  --red: #ff4655;
-  --red-soft: #ff7a84;
-  --text: #ffffff;
-  --muted: #94a3b8;
-  --muted-2: #cbd5e1;
-}
-
 body {
   margin: 0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(255, 70, 85, 0.22), transparent 32%),
-    radial-gradient(circle at bottom right, rgba(90, 120, 255, 0.14), transparent 36%),
-    var(--bg);
-  color: var(--text);
+    radial-gradient(circle at top, rgba(255, 70, 85, 0.18), transparent 32%),
+    #0f1923;
+  color: #fff;
 }
 
-.page {
+.container {
   min-height: 100vh;
   display: grid;
   place-items: center;
@@ -35,219 +20,159 @@ body {
 
 .card {
   width: 100%;
-  max-width: 720px;
-  background: linear-gradient(155deg, rgba(18, 28, 40, 0.96), rgba(7, 11, 18, 0.96));
-  border: 1px solid var(--border);
-  border-radius: 30px;
+  max-width: 560px;
+  background: linear-gradient(160deg, #17212b, #0f1923);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
   padding: 28px;
-  box-shadow:
-    0 30px 120px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(20px);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
 }
 
-.header {
-  margin-bottom: 22px;
-}
-
-.eyebrow {
-  margin: 0 0 10px;
-  color: var(--red);
+.label {
+  color: #ff4655;
   font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.16em;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  margin: 0 0 10px;
 }
 
 h1 {
-  margin: 0;
-  font-size: clamp(40px, 7vw, 64px);
-  line-height: 0.95;
-  letter-spacing: -0.05em;
+  margin: 0 0 24px;
+  font-size: 42px;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
 }
 
 h1 span {
-  color: var(--red);
+  color: #ff4655;
 }
 
-.subtitle {
-  margin: 14px 0 0;
-  color: var(--muted-2);
-  font-size: 14px;
-  line-height: 1.7;
-}
-
-.hero-status {
+.top-panel {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr;
   gap: 12px;
   margin-bottom: 18px;
 }
 
-.rank-box,
-.metric-box,
-.big-grid div,
-.small-grid div,
-.stats-grid div {
+.rank-main {
+  background: rgba(255, 70, 85, 0.14);
+  border: 1px solid rgba(255, 70, 85, 0.28);
   border-radius: 20px;
-  padding: 18px;
-  background: var(--card-light);
-  border: 1px solid var(--border);
+  padding: 20px;
 }
 
-.rank-box {
-  background:
-    linear-gradient(145deg, rgba(255, 70, 85, 0.22), rgba(255, 255, 255, 0.05));
-  border-color: var(--border-red);
-}
-
-.rank-box p,
-.metric-box p,
-.big-grid p,
-.small-grid p,
-.stats-grid p {
-  margin: 0 0 8px;
-  color: var(--muted);
+.rank-main p,
+.top-mini p,
+.main-grid p,
+.grid p {
+  color: #9aa4af;
   font-size: 13px;
-  font-weight: 700;
+  margin: 0 0 8px;
 }
 
-.rank-box strong {
+.rank-main strong {
   display: block;
-  font-size: clamp(32px, 6vw, 48px);
-  line-height: 1;
-  letter-spacing: -0.04em;
+  font-size: 44px;
+  line-height: 1.05;
 }
 
-.rank-box span {
+.rank-main span {
   display: block;
-  margin-top: 8px;
-  color: var(--red-soft);
+  margin-top: 6px;
+  color: #ff4655;
   font-size: 24px;
   font-weight: 900;
 }
 
-.metric-box strong {
-  font-size: clamp(26px, 4vw, 36px);
-  letter-spacing: -0.04em;
-}
-
-.challenge-card,
-.season-card {
-  margin-top: 18px;
-  padding: 20px;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.035);
-  border: 1px solid var(--border);
-}
-
-.challenge-card {
-  background:
-    linear-gradient(145deg, rgba(255, 70, 85, 0.1), rgba(255, 255, 255, 0.035));
-}
-
-.section-title {
-  margin-bottom: 14px;
-}
-
-.section-title p {
-  margin: 0 0 6px;
-  color: var(--red);
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.14em;
-}
-
-.section-title h2 {
-  margin: 0;
-  font-size: 22px;
-  letter-spacing: -0.04em;
-}
-
-.big-grid {
+.top-mini {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+.top-mini div,
+.main-grid div,
+.grid div {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.top-mini strong {
+  font-size: 30px;
+}
+
+.challenge {
+  margin-top: 20px;
+  margin-bottom: 24px;
+  background: rgba(255, 70, 85, 0.08);
+  border: 1px solid rgba(255, 70, 85, 0.2);
+  border-radius: 20px;
+  padding: 18px;
+}
+
+.challenge-label {
+  color: #ff4655;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin: 0 0 12px;
+}
+
+.main-grid,
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.main-grid {
   margin-bottom: 16px;
 }
 
-.big-grid strong {
-  font-size: clamp(30px, 5vw, 44px);
-  letter-spacing: -0.05em;
+.main-grid strong {
+  font-size: 30px;
 }
 
-.pace {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+.grid strong {
+  font-size: 22px;
 }
 
 .pace-block {
-  min-width: 0;
+  margin-top: 16px;
 }
 
-.pace-block h3 {
-  margin: 0 0 10px;
-  color: var(--muted-2);
-  font-size: 15px;
+.pace-block h2,
+.season h2 {
+  font-size: 18px;
+  margin: 0 0 12px;
 }
 
-.small-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-
-.small-grid strong {
-  font-size: 22px;
-  letter-spacing: -0.04em;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-.stats-grid strong {
-  font-size: 22px;
-  letter-spacing: -0.04em;
+.season {
+  margin-top: 24px;
 }
 
 .note {
-  margin: 18px 0 0;
-  padding: 14px 16px;
-  color: var(--muted-2);
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid var(--border);
-  border-radius: 18px;
+  margin-top: 20px;
+  color: #c9d1d9;
   line-height: 1.7;
   font-size: 14px;
 }
 
-@media (max-width: 640px) {
-  .page {
+@media (max-width: 520px) {
+  .container {
     padding: 14px;
   }
 
   .card {
     padding: 20px;
-    border-radius: 24px;
   }
 
-  .hero-status {
-    grid-template-columns: 1fr 1fr;
+  h1 {
+    font-size: 36px;
   }
 
-  .rank-box {
-    grid-column: 1 / -1;
-  }
-
-  .big-grid,
-  .pace {
+  .main-grid,
+  .grid {
     grid-template-columns: 1fr;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr 1fr;
   }
 }
