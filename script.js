@@ -5,7 +5,10 @@ const CONFIG = {
   apiKey: "HDEV-cfe7edcd-5fca-4a04-a777-181a3a74aa60",
 
   targetRank: "Diamond 1",
-  targetDate: "2026-09-01T00:00:00+09:00"
+  targetDate: "2026-09-01T00:00:00+09:00",
+
+  // 今Act開始日：Season 2026 Act 4 / AP・日本向け
+  actStartDate: "2026-06-24T00:00:00+09:00"
 };
 
 const rankPoints = {
@@ -38,6 +41,11 @@ const rankPoints = {
 
 function round1(value) {
   return Math.round(value * 10) / 10;
+}
+
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
 }
 
 async function apiFetch(url) {
@@ -80,6 +88,20 @@ async function fetchMatches() {
     `?mode=competitive&size=10`;
 
   return await apiFetch(url);
+}
+
+function getGameDate(game) {
+  const rawDate =
+    game.date ||
+    game.date_raw ||
+    game.started_at ||
+    game.match_start ||
+    game.match_start_time;
+
+  if (!rawDate) return null;
+
+  const date = new Date(rawDate);
+  return isNaN(date) ? null : date;
 }
 
 function calculateProgress(currentRank, currentRR, averageWinRR) {
@@ -125,12 +147,23 @@ function calculateProgress(currentRank, currentRR, averageWinRR) {
   };
 }
 
-function getSeasonStats(historyJson) {
+function getActStats(historyJson) {
   const games = historyJson.data || [];
+  const actStart = new Date(CONFIG.actStartDate);
 
-  const rrChanges = games
-    .map(game => game.mmr_change_to_last_game)
-    .filter(rr => typeof rr === "number" && rr !== 0);
+  const validGames = games.filter(game => {
+    const rr = game.mmr_change_to_last_game;
+    const date = getGameDate(game);
+
+    return (
+      typeof rr === "number" &&
+      rr !== 0 &&
+      date &&
+      date >= actStart
+    );
+  });
+
+  const rrChanges = validGames.map(game => game.mmr_change_to_last_game);
 
   const wins = rrChanges.filter(rr => rr > 0);
   const losses = rrChanges.filter(rr => rr < 0);
@@ -150,23 +183,53 @@ function getSeasonStats(historyJson) {
       ? round1(losses.reduce((sum, rr) => sum + rr, 0) / losses.length)
       : 0;
 
+  const dates = validGames
+    .map(getGameDate)
+    .filter(Boolean);
+
+  let periodText = "今Act";
+
+  if (dates.length > 0) {
+    const oldest = new Date(Math.min(...dates));
+    const newest = new Date(Math.max(...dates));
+
+    periodText =
+      `${oldest.getFullYear()}/${oldest.getMonth() + 1}/${oldest.getDate()}` +
+      `〜` +
+      `${newest.getFullYear()}/${newest.getMonth() + 1}/${newest.getDate()}`;
+  }
+
   return {
     matches,
     wins: wins.length,
     losses: losses.length,
     winRate,
     avgWinRR,
-    avgLossRR
+    avgLossRR,
+    periodText
   };
 }
 
 function getKD(matchesJson) {
   const matches = matchesJson.data || [];
+  const actStart = new Date(CONFIG.actStartDate);
 
   let kills = 0;
   let deaths = 0;
 
   for (const match of matches) {
+    const metadata = match.metadata || {};
+    const matchDateRaw =
+      metadata.started_at ||
+      metadata.game_start ||
+      metadata.game_start_patched ||
+      metadata.match_start_time;
+
+    if (matchDateRaw) {
+      const matchDate = new Date(matchDateRaw);
+      if (!isNaN(matchDate) && matchDate < actStart) continue;
+    }
+
     const players = match.players?.all_players || [];
 
     const me = players.find(player => {
@@ -196,11 +259,6 @@ function getKD(matchesJson) {
   return (kills / deaths).toFixed(2);
 }
 
-function setText(id, text) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = text;
-}
-
 async function main() {
   try {
     const mmrJson = await fetchCurrentMMR();
@@ -211,17 +269,17 @@ async function main() {
     const currentRank = currentData.currenttierpatched;
     const currentRR = currentData.ranking_in_tier;
 
-    const seasonStats = getSeasonStats(historyJson);
+    const actStats = getActStats(historyJson);
 
     const result = calculateProgress(
       currentRank,
       currentRR,
-      seasonStats.avgWinRR
+      actStats.avgWinRR
     );
 
     setText("topRank", currentRank);
     setText("topRR", `${currentRR} RR`);
-    setText("topWinRate", `${seasonStats.winRate}%`);
+    setText("topWinRate", `${actStats.winRate}%`);
 
     setText("challengeDays", `${result.remainingDays}日`);
     setText("challengeRequiredRR", `${result.requiredRR} RR`);
@@ -232,16 +290,17 @@ async function main() {
     setText("weeklyRequiredRR", `${result.weeklyRequiredRR} RR/週`);
     setText("weeklyRequiredWins", `${result.weeklyRequiredWins} 勝/週`);
 
-    setText("seasonMatches", `${seasonStats.matches}試合`);
-    setText("seasonWinRate", `${seasonStats.winRate}%`);
-    setText("seasonWins", `${seasonStats.wins}勝`);
-    setText("seasonLosses", `${seasonStats.losses}敗`);
-    setText("seasonAvgWinRR", `+${seasonStats.avgWinRR}RR`);
-    setText("seasonAvgLossRR", `${seasonStats.avgLossRR}RR`);
+    setText("seasonMatches", `${actStats.matches}試合`);
+    setText("seasonWinRate", `${actStats.winRate}%`);
+    setText("seasonWins", `${actStats.wins}勝`);
+    setText("seasonLosses", `${actStats.losses}敗`);
+    setText("seasonAvgWinRR", `+${actStats.avgWinRR}RR`);
+    setText("seasonAvgLossRR", `${actStats.avgLossRR}RR`);
+    setText("seasonPeriod", `集計期間：${actStats.periodText}`);
 
     setText(
       "message",
-      `勝利時平均 +${seasonStats.avgWinRR}RR で、ダイヤモンドチャレンジ達成までの必要ペースを計算しています。`
+      `今Actの勝利時平均 +${actStats.avgWinRR}RR で、ダイヤモンドチャレンジ達成までの必要ペースを計算しています。`
     );
 
     try {
