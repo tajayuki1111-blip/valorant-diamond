@@ -10,8 +10,7 @@ const CONFIG = {
   // 今Act開始日
   actStartDate: "2026-06-24T00:00:00+09:00",
 
-  // 今Actの試合履歴を何試合分見るか
-  // 足りない場合は 50 に変更
+  // 取得する試合数。足りなければ50に変更
   matchSize: 50
 };
 
@@ -93,12 +92,12 @@ async function fetchMatches() {
     `https://api.henrikdev.xyz/valorant/v3/matches/${CONFIG.region}/` +
     `${encodeURIComponent(CONFIG.riotName)}/` +
     `${encodeURIComponent(CONFIG.riotTag)}` +
-    `?mode=competitive&size=${CONFIG.matchSize}`;
+    `?filter=competitive&size=${CONFIG.matchSize}`;
 
   return await apiFetch(url);
 }
 
-function getGameDateFromHistory(game) {
+function getDateFromHistory(game) {
   const rawDate =
     game.date ||
     game.date_raw ||
@@ -128,6 +127,75 @@ function getMatchDate(match) {
   return isNaN(date) ? null : date;
 }
 
+function getAllPlayers(match) {
+  const players = match.players || {};
+
+  if (Array.isArray(players.all_players)) {
+    return players.all_players;
+  }
+
+  const red = Array.isArray(players.red) ? players.red : [];
+  const blue = Array.isArray(players.blue) ? players.blue : [];
+
+  return [...red, ...blue];
+}
+
+function getPlayerName(player) {
+  return (
+    player.name ||
+    player.game_name ||
+    player.username ||
+    player.player_name ||
+    ""
+  );
+}
+
+function getPlayerTag(player) {
+  return (
+    player.tag ||
+    player.tag_line ||
+    player.tagline ||
+    player.player_tag ||
+    ""
+  );
+}
+
+function normalizeTeam(team) {
+  if (!team) return "";
+
+  const value = String(team).toLowerCase();
+
+  if (value === "red") return "red";
+  if (value === "blue") return "blue";
+
+  return value;
+}
+
+function getTeamResult(match, myTeam) {
+  const teams = match.teams || {};
+  const team = normalizeTeam(myTeam);
+
+  if (!team) return null;
+
+  const teamData = teams[team];
+
+  if (!teamData) return null;
+
+  if (typeof teamData.has_won === "boolean") {
+    return teamData.has_won;
+  }
+
+  if (typeof teamData.won === "boolean") {
+    return teamData.won;
+  }
+
+  if (typeof teamData.winner === "boolean") {
+    return teamData.winner;
+  }
+
+  return null;
+}
+
 function calculateProgress(currentRank, currentRR, averageWinRR) {
   const today = new Date();
   const targetDate = new Date(CONFIG.targetDate);
@@ -138,6 +206,7 @@ function calculateProgress(currentRank, currentRR, averageWinRR) {
   const requiredRR = Math.max(targetTotalRR - currentTotalRR, 0);
 
   const msPerDay = 1000 * 60 * 60 * 24;
+
   const remainingDays = Math.max(
     Math.ceil((targetDate - today) / msPerDay),
     0
@@ -181,7 +250,7 @@ function getRRStats(historyJson) {
 
   const validGames = games.filter(game => {
     const rr = game.mmr_change_to_last_game;
-    const date = getGameDateFromHistory(game);
+    const date = getDateFromHistory(game);
 
     return (
       typeof rr === "number" &&
@@ -229,29 +298,23 @@ function getActMatchStats(matchesJson) {
       continue;
     }
 
-    const players = match.players?.all_players || [];
+    const players = getAllPlayers(match);
 
     const me = players.find(player => {
-      const nameMatch =
-        player.name?.toLowerCase() === CONFIG.riotName.toLowerCase();
+      const name = getPlayerName(player).toLowerCase();
+      const tag = getPlayerTag(player).toLowerCase();
 
-      const tagMatch =
-        player.tag?.toLowerCase() === CONFIG.riotTag.toLowerCase();
-
-      return nameMatch && tagMatch;
+      return (
+        name === CONFIG.riotName.toLowerCase() &&
+        tag === CONFIG.riotTag.toLowerCase()
+      );
     });
 
-    if (!me) continue;
-
-    const myTeam = me.team;
-    const teams = match.teams;
-
-    let didWin = null;
-
-    if (teams?.red && teams?.blue) {
-      if (myTeam === "Red") didWin = teams.red.has_won;
-      if (myTeam === "Blue") didWin = teams.blue.has_won;
+    if (!me) {
+      continue;
     }
+
+    const didWin = getTeamResult(match, me.team);
 
     if (didWin === true) {
       wins += 1;
@@ -263,8 +326,8 @@ function getActMatchStats(matchesJson) {
       continue;
     }
 
-    kills += me.stats?.kills || 0;
-    deaths += me.stats?.deaths || 0;
+    kills += me.stats?.kills || me.kills || 0;
+    deaths += me.stats?.deaths || me.deaths || 0;
   }
 
   const winRate =
@@ -291,6 +354,8 @@ async function main() {
     const mmrJson = await fetchCurrentMMR();
     const historyJson = await fetchMMRHistory();
     const matchesJson = await fetchMatches();
+
+    console.log("matchesJson", matchesJson);
 
     const currentData = mmrJson.data.current_data;
 
@@ -343,7 +408,11 @@ async function main() {
   } catch (error) {
     console.error(error);
 
-    setText("message", "ランク情報の取得に失敗しました。Riot ID、タグ、APIキー、regionを確認してください。");
+    setText(
+      "message",
+      "ランク情報の取得に失敗しました。Riot ID、タグ、APIキー、regionを確認してください。"
+    );
+
     setText("topRank", "取得失敗");
     setText("topRR", "- RR");
     setText("topWinRate", "-");
