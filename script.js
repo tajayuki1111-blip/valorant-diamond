@@ -29,8 +29,16 @@ const rankPoints = {
   "Diamond 3": 1700,
   "Ascendant 1": 1800,
   "Ascendant 2": 1900,
-  "Ascendant 3": 2000
+  "Ascendant 3": 2000,
+  "Immortal 1": 2100,
+  "Immortal 2": 2200,
+  "Immortal 3": 2300,
+  "Radiant": 2400
 };
+
+function round1(value) {
+  return Math.round(value * 10) / 10;
+}
 
 function calculateProgress(currentRank, currentRR, averageWinRR) {
   const today = new Date();
@@ -47,19 +55,31 @@ function calculateProgress(currentRank, currentRR, averageWinRR) {
     0
   );
 
-  const requiredPerDay =
-    remainingDays > 0
-      ? Math.ceil((requiredRR / remainingDays) * 10) / 10
-      : requiredRR;
+  const remainingWeeks = remainingDays > 0 ? remainingDays / 7 : 0;
 
-  const requiredWins =
+  const dailyRequiredRR =
+    remainingDays > 0 ? round1(requiredRR / remainingDays) : requiredRR;
+
+  const weeklyRequiredRR =
+    remainingWeeks > 0 ? round1(requiredRR / remainingWeeks) : requiredRR;
+
+  const totalRequiredWins =
     averageWinRR > 0 ? Math.ceil(requiredRR / averageWinRR) : 0;
+
+  const dailyRequiredWins =
+    remainingDays > 0 ? round1(totalRequiredWins / remainingDays) : totalRequiredWins;
+
+  const weeklyRequiredWins =
+    remainingWeeks > 0 ? round1(totalRequiredWins / remainingWeeks) : totalRequiredWins;
 
   return {
     requiredRR,
     remainingDays,
-    requiredPerDay,
-    requiredWins
+    dailyRequiredRR,
+    weeklyRequiredRR,
+    totalRequiredWins,
+    dailyRequiredWins,
+    weeklyRequiredWins
   };
 }
 
@@ -101,6 +121,25 @@ async function fetchMMRHistory() {
   return await res.json();
 }
 
+async function fetchMatches() {
+  const url =
+    `https://api.henrikdev.xyz/valorant/v3/matches/${CONFIG.region}/` +
+    `${encodeURIComponent(CONFIG.riotName)}/` +
+    `${encodeURIComponent(CONFIG.riotTag)}`;
+
+  const res = await fetch(url, {
+    headers: {
+      Authorization: CONFIG.apiKey
+    }
+  });
+
+  if (!res.ok) {
+    throw new Error("試合履歴取得に失敗しました");
+  }
+
+  return await res.json();
+}
+
 function getSeasonStats(historyJson) {
   const games = historyJson.data || [];
 
@@ -114,16 +153,16 @@ function getSeasonStats(historyJson) {
   const matches = wins.length + losses.length;
 
   const winRate =
-    matches > 0 ? Math.round((wins.length / matches) * 1000) / 10 : 0;
+    matches > 0 ? round1((wins.length / matches) * 100) : 0;
 
   const avgWinRR =
     wins.length > 0
-      ? Math.round((wins.reduce((sum, rr) => sum + rr, 0) / wins.length) * 10) / 10
+      ? round1(wins.reduce((sum, rr) => sum + rr, 0) / wins.length)
       : 22;
 
   const avgLossRR =
     losses.length > 0
-      ? Math.round((losses.reduce((sum, rr) => sum + rr, 0) / losses.length) * 10) / 10
+      ? round1(losses.reduce((sum, rr) => sum + rr, 0) / losses.length)
       : 0;
 
   return {
@@ -136,10 +175,40 @@ function getSeasonStats(historyJson) {
   };
 }
 
+function getKD(matchesJson) {
+  const matches = matchesJson.data || [];
+
+  let kills = 0;
+  let deaths = 0;
+
+  for (const match of matches) {
+    const players = match.players?.all_players || [];
+
+    const me = players.find(player =>
+      player.name?.toLowerCase() === CONFIG.riotName.toLowerCase() &&
+      player.tag?.toLowerCase() === CONFIG.riotTag.toLowerCase()
+    );
+
+    if (!me) continue;
+
+    kills += me.stats?.kills || 0;
+    deaths += me.stats?.deaths || 0;
+  }
+
+  if (deaths === 0) {
+    return kills > 0 ? kills.toFixed(2) : "0.00";
+  }
+
+  return (kills / deaths).toFixed(2);
+}
+
 async function main() {
   try {
-    const mmrJson = await fetchCurrentMMR();
-    const historyJson = await fetchMMRHistory();
+    const [mmrJson, historyJson, matchesJson] = await Promise.all([
+      fetchCurrentMMR(),
+      fetchMMRHistory(),
+      fetchMatches()
+    ]);
 
     const currentData = mmrJson.data.current_data;
 
@@ -147,6 +216,7 @@ async function main() {
     const currentRR = currentData.ranking_in_tier;
 
     const seasonStats = getSeasonStats(historyJson);
+    const kd = getKD(matchesJson);
 
     const result = calculateProgress(
       currentRank,
@@ -154,24 +224,40 @@ async function main() {
       seasonStats.avgWinRR
     );
 
-    document.getElementById("currentRank").textContent = currentRank;
-    document.getElementById("currentRR").textContent = `${currentRR} RR`;
-    document.getElementById("remainingDays").textContent = `${result.remainingDays}日`;
-    document.getElementById("requiredRR").textContent = `${result.requiredRR} RR`;
-    document.getElementById("requiredPerDay").textContent = `${result.requiredPerDay} RR/日`;
-    document.getElementById("requiredWins").textContent = `${result.requiredWins}勝`;
+    document.getElementById("topRank").textContent = currentRank;
+    document.getElementById("topRR").textContent = `${currentRR} RR`;
+    document.getElementById("topWinRate").textContent = `${seasonStats.winRate}%`;
+    document.getElementById("topKD").textContent = kd;
+
+    document.getElementById("challengeDays").textContent =
+      `${result.remainingDays}日`;
+
+    document.getElementById("challengeRequiredRR").textContent =
+      `${result.requiredRR} RR`;
+
+    document.getElementById("dailyRequiredRR").textContent =
+      `${result.dailyRequiredRR} RR/日`;
+
+    document.getElementById("dailyRequiredWins").textContent =
+      `${result.dailyRequiredWins} 勝/日`;
+
+    document.getElementById("weeklyRequiredRR").textContent =
+      `${result.weeklyRequiredRR} RR/週`;
+
+    document.getElementById("weeklyRequiredWins").textContent =
+      `${result.weeklyRequiredWins} 勝/週`;
 
     document.getElementById("seasonMatches").textContent =
       `${seasonStats.matches}試合`;
-
-    document.getElementById("seasonWinRate").textContent =
-      `${seasonStats.winRate}%`;
 
     document.getElementById("seasonWins").textContent =
       `${seasonStats.wins}勝`;
 
     document.getElementById("seasonLosses").textContent =
       `${seasonStats.losses}敗`;
+
+    document.getElementById("seasonWinRate").textContent =
+      `${seasonStats.winRate}%`;
 
     document.getElementById("seasonAvgWinRR").textContent =
       `+${seasonStats.avgWinRR}RR`;
@@ -181,10 +267,11 @@ async function main() {
 
     document.getElementById("message").textContent =
       result.requiredRR === 0
-        ? "目標達成済みです。"
-        : `勝利時平均 +${seasonStats.avgWinRR}RR で計算しています。`;
+        ? "目標達成済みです。次はDiamond 2を目指せます。"
+        : `勝利時平均 +${seasonStats.avgWinRR}RR で、ダイヤモンドチャレンジ達成までの必要ペースを計算しています。`;
   } catch (error) {
     console.error(error);
+
     document.getElementById("message").textContent =
       "ランク情報の取得に失敗しました。Riot ID、タグ、APIキー、regionを確認してください。";
   }
