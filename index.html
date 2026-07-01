@@ -36,9 +36,7 @@
       <div class="result-panel">
         <span class="panel-label">現在ランク</span>
         <div class="rank-main" id="bigCurrentRank">取得中</div>
-        <p>
-          現在 <span id="bigCurrentRR">0</span>RR
-        </p>
+        <p>現在 <span id="bigCurrentRR">0</span>RR</p>
       </div>
 
       <div class="arrival-panel">
@@ -69,11 +67,6 @@
 
       <div class="metric-grid">
         <div class="metric-card">
-          <span>必要試合数</span>
-          <strong id="neededMatches">計算中</strong>
-        </div>
-
-        <div class="metric-card">
           <span>平均RR</span>
           <strong>
             <span id="avgRRPerMatch">0</span>
@@ -90,10 +83,10 @@
         </div>
 
         <div class="metric-card">
-          <span>Diamond 1まで</span>
+          <span>必要試合数/日</span>
           <strong>
-            <span id="remainingRR">0</span>
-            <small>RR</small>
+            <span id="neededMatchesPerDay">∞</span>
+            <small>試合/日</small>
           </strong>
         </div>
       </div>
@@ -199,6 +192,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=4"></script>
+  <script src="script.js?v=6"></script>
 </body>
 </html>
