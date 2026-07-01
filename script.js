@@ -403,8 +403,10 @@ async function main() {
   }
 }
 
-// ===== ボタン =====
-document.addEventListener("DOMContentLoaded", () => {
+
+function setup() {
+  console.log("script.js 読み込み成功");
+
   const reloadButton = getEl("reloadButton");
   const resetButton = getEl("resetButton");
 
@@ -417,4 +419,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   main();
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", setup);
+} else {
+  setup();
+}
