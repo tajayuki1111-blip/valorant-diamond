@@ -26,12 +26,22 @@ body {
   margin-bottom: 24px;
 }
 
+.hero.compact {
+  align-items: center;
+  margin-bottom: 18px;
+}
+
 .eyebrow {
   color: #ff4655;
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.16em;
   margin: 0 0 8px;
+}
+
+.eyebrow.small {
+  font-size: 11px;
+  margin-bottom: 4px;
 }
 
 h1 {
@@ -41,25 +51,16 @@ h1 {
   letter-spacing: -0.06em;
 }
 
+h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
 .subtitle {
   color: #cbd5e1;
   max-width: 620px;
   line-height: 1.7;
   margin: 18px 0 0;
-}
-
-.player-card,
-.status-card,
-.stat-card,
-.summary-card,
-.challenge-card,
-.action-card,
-.log-card {
-  background: rgba(15, 23, 42, 0.82);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(16px);
-  border-radius: 24px;
 }
 
 .player-card {
@@ -68,6 +69,15 @@ h1 {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(16px);
+  border-radius: 24px;
+}
+
+.compact-card {
+  min-width: 190px;
 }
 
 .player-name {
@@ -81,97 +91,127 @@ h1 {
   font-weight: 700;
 }
 
-.status-card {
-  padding: 18px 22px;
-  margin-bottom: 18px;
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  color: #cbd5e1;
-}
+/* ===============================
+   Main dashboard
+================================ */
 
-.status-card p {
-  margin: 0;
-}
-
-.stats-grid {
+.dashboard-hero {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 18px;
   margin-bottom: 18px;
 }
 
-.stat-card {
-  padding: 24px;
+.countdown-panel,
+.result-panel,
+.arrival-panel {
   position: relative;
   overflow: hidden;
+  padding: 28px;
+  border-radius: 28px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.86);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(16px);
 }
 
-.stat-card::after {
-  content: "";
-  position: absolute;
-  right: -35px;
-  bottom: -35px;
-  width: 110px;
-  height: 110px;
-  border-radius: 999px;
-  background: rgba(255, 70, 85, 0.14);
-}
-
-.stat-card.main {
+.countdown-panel {
   background:
-    linear-gradient(135deg, rgba(255, 70, 85, 0.28), rgba(15, 23, 42, 0.86));
+    radial-gradient(circle at right top, rgba(255, 70, 85, 0.35), transparent 42%),
+    linear-gradient(135deg, rgba(255, 70, 85, 0.18), rgba(15, 23, 42, 0.9));
+  border-color: rgba(255, 70, 85, 0.35);
 }
 
-.stat-label {
-  color: #94a3b8;
-  font-size: 14px;
-  font-weight: 700;
-  margin-bottom: 8px;
+.result-panel {
+  background:
+    radial-gradient(circle at right top, rgba(99, 102, 241, 0.35), transparent 42%),
+    linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(15, 23, 42, 0.9));
+  border-color: rgba(129, 140, 248, 0.3);
 }
 
-.stat-value {
-  font-size: 48px;
-  font-weight: 950;
+.arrival-panel {
+  background:
+    radial-gradient(circle at right top, rgba(34, 197, 94, 0.18), transparent 42%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.92));
+}
+
+.panel-label {
+  display: block;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+
+.days-main {
+  font-size: clamp(44px, 7vw, 82px);
+  font-weight: 1000;
+  line-height: 1;
+  letter-spacing: -0.08em;
+}
+
+.days-main span {
+  color: #ff4655;
+}
+
+.rank-main {
+  font-size: clamp(34px, 5vw, 58px);
+  font-weight: 1000;
+  line-height: 1;
   letter-spacing: -0.06em;
 }
 
-.summary-card,
+.arrival-text {
+  font-size: 24px;
+  font-weight: 950;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.countdown-panel p,
+.result-panel p {
+  margin: 14px 0 0;
+  color: #cbd5e1;
+  font-weight: 700;
+}
+
+.status-pill {
+  display: inline-flex;
+  margin-top: 14px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 950;
+  background: rgba(148, 163, 184, 0.16);
+  color: #e2e8f0;
+}
+
+.status-pill.ok {
+  background: rgba(34, 197, 94, 0.16);
+  color: #22c55e;
+}
+
+.status-pill.ng {
+  background: rgba(239, 68, 68, 0.16);
+  color: #ef4444;
+}
+
+/* ===============================
+   Sections
+================================ */
+
 .challenge-card,
+.data-section,
 .action-card,
 .log-card {
   padding: 24px;
   margin-bottom: 18px;
-}
-
-h2 {
-  margin: 0 0 14px;
-  font-size: 20px;
-}
-
-#summaryText {
-  color: #e2e8f0;
-  line-height: 1.8;
-  margin: 0 0 20px;
-}
-
-.small-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-}
-
-.small-grid > div {
-  background: rgba(2, 6, 23, 0.42);
-  border-radius: 16px;
-  padding: 16px;
-}
-
-.small-label {
-  display: block;
-  color: #94a3b8;
-  font-size: 13px;
-  margin-bottom: 6px;
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(16px);
+  border-radius: 24px;
 }
 
 .challenge-card {
@@ -180,67 +220,84 @@ h2 {
   border: 1px solid rgba(255, 70, 85, 0.25);
 }
 
-.challenge-grid {
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.section-head > p {
+  max-width: 560px;
+  margin: 0;
+  color: #cbd5e1;
+  line-height: 1.7;
+  text-align: right;
+}
+
+.metric-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
 }
 
-.challenge-grid > div {
-  background: rgba(2, 6, 23, 0.46);
+.metric-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(2, 6, 23, 0.5);
   border: 1px solid rgba(148, 163, 184, 0.12);
-  border-radius: 16px;
-  padding: 16px;
 }
 
-.challenge-grid strong {
-  font-size: 22px;
+.metric-card span {
+  display: block;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 8px;
 }
 
-.pace-box {
+.metric-card strong {
+  font-size: 24px;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+.pace-box.redesigned {
   margin-top: 18px;
+  padding: 18px;
   display: grid;
   grid-template-columns: 1fr 1fr auto;
-  gap: 12px;
+  gap: 14px;
   align-items: end;
+  background: rgba(2, 6, 23, 0.55);
+  border: 1px solid rgba(255, 70, 85, 0.18);
+  border-radius: 20px;
 }
 
-.pace-box label {
+.pace-box.redesigned label span {
+  display: block;
   color: #cbd5e1;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 900;
 }
 
 .pace-box input {
   width: 100%;
   margin-top: 8px;
-  padding: 13px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(2, 6, 23, 0.6);
+  padding: 15px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.95);
   color: #f8fafc;
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 22px;
+  font-weight: 950;
+  outline: none;
 }
 
-.challenge-note {
-  margin: 18px 0 0;
-  color: #cbd5e1;
-  line-height: 1.7;
-  white-space: pre-line;
-}
-
-#challengeStatus.ok {
-  color: #22c55e;
-}
-
-#challengeStatus.ng {
-  color: #ef4444;
-}
-
-.action-card {
-  display: flex;
-  gap: 12px;
+.pace-box input:focus {
+  border-color: rgba(255, 70, 85, 0.85);
+  box-shadow: 0 0 0 4px rgba(255, 70, 85, 0.12);
 }
 
 button {
@@ -260,10 +317,73 @@ button:hover {
   opacity: 0.92;
 }
 
+#calcPaceButton {
+  height: 58px;
+  padding: 0 22px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ff4655, #ff7a85);
+  color: white;
+  font-size: 15px;
+  font-weight: 950;
+  white-space: nowrap;
+  box-shadow: 0 14px 30px rgba(255, 70, 85, 0.25);
+}
+
 button.danger {
   background: rgba(148, 163, 184, 0.18);
   color: #e2e8f0;
 }
+
+/* ===============================
+   Recent data
+================================ */
+
+.data-section {
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.compact-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.compact-stats > div {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(2, 6, 23, 0.45);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.compact-stats span {
+  display: block;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.compact-stats strong {
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.action-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.action-card p {
+  margin: 0 0 0 auto;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+/* ===============================
+   Match list
+================================ */
 
 .match-list {
   display: grid;
@@ -310,110 +430,78 @@ button.danger {
   color: #94a3b8;
 }
 
-@media (max-width: 800px) {
-  .hero,
-  .status-card,
-  .action-card {
+/* ===============================
+   Responsive
+================================ */
+
+@media (max-width: 980px) {
+  .dashboard-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .section-head {
     flex-direction: column;
   }
 
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .section-head > p {
+    text-align: left;
   }
-
-  .small-grid,
-  .challenge-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .pace-box {
-    grid-template-columns: 1fr;
-  }
-
-  .match-item {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 520px) {
-  .stats-grid,
-  .small-grid,
-  .challenge-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .stat-value {
-    font-size: 42px;
-  }
-}
-.pace-box {
-  margin-top: 22px;
-  padding: 18px;
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 14px;
-  align-items: end;
-  background: rgba(2, 6, 23, 0.55);
-  border: 1px solid rgba(255, 70, 85, 0.22);
-  border-radius: 20px;
-}
-
-.pace-box label {
-  display: block;
-  color: #cbd5e1;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.pace-box input {
-  width: 100%;
-  margin-top: 8px;
-  padding: 15px 16px;
-  border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  background: rgba(15, 23, 42, 0.95);
-  color: #f8fafc;
-  font-size: 22px;
-  font-weight: 950;
-  outline: none;
-}
-
-.pace-box input:focus {
-  border-color: rgba(255, 70, 85, 0.85);
-  box-shadow: 0 0 0 4px rgba(255, 70, 85, 0.12);
-}
-
-#calcPaceButton {
-  height: 54px;
-  padding: 0 22px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #ff4655, #ff7a85);
-  color: white;
-  font-size: 15px;
-  font-weight: 950;
-  white-space: nowrap;
-  box-shadow: 0 14px 30px rgba(255, 70, 85, 0.25);
-}
-
-.challenge-note {
-  margin-top: 16px;
-  padding: 18px;
-  border-radius: 18px;
-  background: rgba(2, 6, 23, 0.55);
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  color: #f8fafc;
-  font-size: 20px;
-  font-weight: 900;
-  line-height: 1.7;
-  white-space: pre-line;
 }
 
 @media (max-width: 800px) {
-  .pace-box {
+  .hero,
+  .action-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pace-box.redesigned {
     grid-template-columns: 1fr;
   }
 
   #calcPaceButton {
     width: 100%;
+  }
+
+  .match-item {
+    grid-template-columns: 1fr;
+  }
+
+  .action-card p {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .metric-grid,
+  .compact-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .arrival-text {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 520px) {
+  .app {
+    width: min(100% - 20px, 1100px);
+    padding-top: 20px;
+  }
+
+  .days-main {
+    font-size: 48px;
+  }
+
+  .rank-main {
+    font-size: 40px;
+  }
+
+  h1 {
+    font-size: 42px;
   }
 }
