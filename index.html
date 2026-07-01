@@ -3,110 +3,85 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ダイヤモンドチャレンジ</title>
+  <title>VALORANT Act Tracker</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main class="container">
-    <section class="card">
-      <p class="label">VALORANT RANK CHALLENGE</p>
-      <h1>ダイヤモンド<br><span>チャレンジ</span></h1>
+  <main class="app">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">VALORANT ACT TRACKER</p>
+        <h1>Diamond Challenge</h1>
+        <p class="subtitle">
+          Henrik APIで直近試合を取得し、localStorageに保存して今Actの戦績を集計します。
+        </p>
+      </div>
 
-      <section class="top-panel">
-        <div class="rank-main">
-          <p>現在ランク</p>
-          <strong id="topRank">取得中...</strong>
-          <span id="topRR">- RR</span>
+      <div class="player-card">
+        <div class="player-name">松本絃歩</div>
+        <div class="player-tag">#ギャル</div>
+      </div>
+    </section>
+
+    <section class="status-card">
+      <p id="statusText">待機中</p>
+      <p id="periodText">集計期間：2026/6/24〜現在</p>
+    </section>
+
+    <section class="stats-grid">
+      <div class="stat-card main">
+        <div class="stat-label">今Act 試合数</div>
+        <div class="stat-value" id="matchCount">0</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">勝利数</div>
+        <div class="stat-value" id="winCount">0</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">敗北数</div>
+        <div class="stat-value" id="lossCount">0</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">勝率</div>
+        <div class="stat-value" id="winRate">0%</div>
+      </div>
+    </section>
+
+    <section class="summary-card">
+      <h2>Summary</h2>
+      <p id="summaryText">読み込み中...</p>
+
+      <div class="small-grid">
+        <div>
+          <span class="small-label">最新試合</span>
+          <strong id="latestMatch">なし</strong>
         </div>
 
-        <div class="top-mini">
-          <div>
-            <p>今Act勝率</p>
-            <strong id="topWinRate">-</strong>
-          </div>
-          <div>
-            <p>KD</p>
-            <strong id="topKD">-</strong>
-          </div>
-        </div>
-      </section>
-
-      <section class="challenge">
-        <p class="challenge-label">チャレンジ達成まで</p>
-
-        <div class="main-grid">
-          <div>
-            <p>残り日数</p>
-            <strong id="challengeDays">-日</strong>
-          </div>
-          <div>
-            <p>必要RR</p>
-            <strong id="challengeRequiredRR">- RR</strong>
-          </div>
+        <div>
+          <span class="small-label">保存済み</span>
+          <strong><span id="savedCount">0</span>試合</strong>
         </div>
 
-        <div class="pace-block">
-          <h2>1日ペース</h2>
-          <div class="grid">
-            <div>
-              <p>必要平均RR</p>
-              <strong id="dailyRequiredRR">- RR/日</strong>
-            </div>
-            <div>
-              <p>必要勝利数</p>
-              <strong id="dailyRequiredWins">- 勝/日</strong>
-            </div>
-          </div>
+        <div>
+          <span class="small-label">今回追加</span>
+          <strong><span id="addedCount">0</span>試合</strong>
         </div>
+      </div>
+    </section>
 
-        <div class="pace-block">
-          <h2>1週間ペース</h2>
-          <div class="grid">
-            <div>
-              <p>必要平均RR</p>
-              <strong id="weeklyRequiredRR">- RR/週</strong>
-            </div>
-            <div>
-              <p>必要勝利数</p>
-              <strong id="weeklyRequiredWins">- 勝/週</strong>
-            </div>
-          </div>
-        </div>
-      </section>
+    <section class="action-card">
+      <button id="reloadButton">再取得する</button>
+      <button id="resetButton" class="danger">保存データをリセット</button>
+    </section>
 
-      <section class="season">
-        <h2>今Actコンペ戦績</h2>
-        <p class="period" id="seasonPeriod">集計期間：今Act</p>
-
-        <div class="grid">
-          <div>
-            <p>試合数</p>
-            <strong id="seasonMatches">-</strong>
-          </div>
-          <div>
-            <p>勝率</p>
-            <strong id="seasonWinRate">-</strong>
-          </div>
-          <div>
-            <p>勝利</p>
-            <strong id="seasonWins">-</strong>
-          </div>
-          <div>
-            <p>敗北</p>
-            <strong id="seasonLosses">-</strong>
-          </div>
-          <div>
-            <p>勝利時平均RR</p>
-            <strong id="seasonAvgWinRR">-</strong>
-          </div>
-          <div>
-            <p>敗北時平均RR</p>
-            <strong id="seasonAvgLossRR">-</strong>
-          </div>
-        </div>
-      </section>
-
-      <p class="note" id="message">データを取得しています。</p>
+    <section class="log-card">
+      <h2>Recent Matches</h2>
+      <div id="matchList" class="match-list">
+        <p class="muted">まだ試合データがありません。</p>
+      </div>
     </section>
   </main>
 
