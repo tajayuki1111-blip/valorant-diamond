@@ -752,3 +752,28 @@ button.danger {
   letter-spacing: -0.06em;
   color: #f8fafc;
 }
+/* ===============================
+   Pace metric same size fix
+   平均RR / 9月1日まで必要 / Diamond 1まで
+================================ */
+
+.metric-card strong {
+  display: flex !important;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: clamp(30px, 4vw, 42px) !important;
+  font-weight: 1000;
+  line-height: 1;
+  letter-spacing: -0.06em;
+}
+
+.metric-card strong span,
+.metric-card strong small {
+  display: inline-block;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: 1;
+  letter-spacing: -0.06em;
+  color: #f8fafc;
+}
