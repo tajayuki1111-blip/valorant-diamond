@@ -1,7 +1,7 @@
-// ===============================
-// VALORANT Act Tracker
-// Henrik API + localStorage蓄積版
-// デバッグ表示あり
+  // ===============================
+// VALORANT Diamond Challenge
+// Henrik API + localStorage軽量保存
+// 直近試合データ + MMR履歴で到達予定日を計算
 // ===============================
 
 const CONFIG = {
@@ -9,19 +9,26 @@ const CONFIG = {
   riotTag: "ギャル",
   region: "ap",
 
-  // 注意：公開サイトに直書きするとAPIキーは見えます
-  // 401が出る場合、このキーが無効です。HenrikDevで新しいAPIキーを作って入れ替えてください。
+  // ここにHenrik APIキーを入れる
   apiKey: "HDEV-cfe7edcd-5fca-4a04-a777-181a3a74aa60",
 
-  // 今Act開始日
-  actStart: "2026-06-24T00:00:00+09:00",
+  // 目標期限
+  challengeEnd: "2026-09-01T23:59:59+09:00",
 
-  // 一度に取る最大試合数
+  // 直近何試合で計算するか
+  recentMatchCount: 10,
+
+  // APIに要求する試合数
   fetchSize: 50,
 
-  // localStorage保存キー
-  storageKey: "valorant_matches_cache_v1"
+  // Diamond 1のHenrik elo目安
+  // Bronze 3 63RR ≒ 863、Diamond 1 0RR ≒ 1800 のような計算
+  targetElo: 1800,
+
+  storageKey: "valorant_matches_cache_challenge_v1"
 };
+
+let lastChallenge = null;
 
 // ===============================
 // DOM
@@ -35,27 +42,6 @@ function getEl(id) {
   return document.getElementById(id);
 }
 
-function debug(message, data) {
-  const el = getEl("debugText");
-  const time = new Date().toLocaleTimeString("ja-JP");
-
-  let text = `[${time}] ${message}`;
-
-  if (data !== undefined) {
-    try {
-      text += "\n" + JSON.stringify(data, null, 2);
-    } catch (e) {
-      text += "\n" + String(data);
-    }
-  }
-
-  console.log(message, data ?? "");
-
-  if (el) {
-    el.textContent = text + "\n\n" + el.textContent;
-  }
-}
-
 // ===============================
 // localStorage
 // ===============================
@@ -66,8 +52,7 @@ function loadSavedMatches() {
 
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    debug("保存データ読み込み失敗", error.message);
+  } catch {
     return [];
   }
 }
@@ -77,67 +62,95 @@ function saveMatches(matches) {
 }
 
 function clearSavedMatches() {
-  const ok = confirm("保存済みの試合データをリセットしますか？");
-  if (!ok) return;
-
   localStorage.removeItem(CONFIG.storageKey);
+  localStorage.removeItem("valorant_matches_cache_v1");
+  localStorage.removeItem("valorant_matches_cache_light_v1");
+  localStorage.removeItem("valorant_matches_cache_light_v2");
   location.reload();
 }
 
 // ===============================
-// Henrik API
+// API
 // ===============================
+function getEncodedPlayer() {
+  return {
+    name: encodeURIComponent(CONFIG.riotName),
+    tag: encodeURIComponent(CONFIG.riotTag)
+  };
+}
+
 async function fetchLatestMatches() {
-  const encodedName = encodeURIComponent(CONFIG.riotName);
-  const encodedTag = encodeURIComponent(CONFIG.riotTag);
+  const encoded = getEncodedPlayer();
 
   const url =
-    `https://api.henrikdev.xyz/valorant/v3/matches/${CONFIG.region}/${encodedName}/${encodedTag}?size=${CONFIG.fetchSize}`;
+    `https://api.henrikdev.xyz/valorant/v3/matches/${CONFIG.region}/${encoded.name}/${encoded.tag}?size=${CONFIG.fetchSize}`;
 
-  debug("fetch URL", url);
+  const response = await fetch(url, {
+    headers: {
+      Authorization: CONFIG.apiKey,
+      Accept: "*/*"
+    }
+  });
 
-  let response;
-
-  try {
-    response = await fetch(url, {
-      headers: {
-        // ここ重要：Bearer は付けない
-        Authorization: CONFIG.apiKey,
-        Accept: "*/*"
-      }
-    });
-  } catch (error) {
-    throw new Error(`通信失敗: ${error.message}`);
-  }
-
-  const text = await response.text();
-
-  debug("HTTP status", response.status);
-  debug("raw text", text.slice(0, 1000));
-
-  let data;
-
-  try {
-    data = JSON.parse(text);
-  } catch (error) {
-    throw new Error("JSONに変換できません。APIがHTMLやエラー文を返しています。");
-  }
-
-  debug("API raw", data);
+  const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(`API取得失敗: HTTP ${response.status}`);
+    throw new Error(`試合取得失敗: HTTP ${response.status}`);
   }
 
   if (!Array.isArray(data.data)) {
-    throw new Error("data.data が配列ではありません。API rawを確認してください。");
+    throw new Error("試合データを取得できませんでした");
   }
 
   return data.data;
 }
 
+async function fetchCurrentMMR() {
+  const encoded = getEncodedPlayer();
+
+  const url =
+    `https://api.henrikdev.xyz/valorant/v1/mmr/${CONFIG.region}/${encoded.name}/${encoded.tag}`;
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: CONFIG.apiKey,
+      Accept: "*/*"
+    }
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(`MMR取得失敗: HTTP ${response.status}`);
+  }
+
+  return data.data;
+}
+
+async function fetchMMRHistory() {
+  const encoded = getEncodedPlayer();
+
+  const url =
+    `https://api.henrikdev.xyz/valorant/v1/mmr-history/${CONFIG.region}/${encoded.name}/${encoded.tag}`;
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: CONFIG.apiKey,
+      Accept: "*/*"
+    }
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(`MMR履歴取得失敗: HTTP ${response.status}`);
+  }
+
+  return Array.isArray(data.data) ? data.data : [];
+}
+
 // ===============================
-// match情報取り出し
+// 試合データ処理
 // ===============================
 function getMatchId(match) {
   return (
@@ -187,17 +200,20 @@ function getMapName(match) {
   );
 }
 
-function isCompetitive(match) {
-  const meta = match?.metadata || {};
+function getMode(match) {
+  return String(
+    match?.metadata?.mode ||
+    match?.metadata?.mode_id ||
+    match?.metadata?.queue ||
+    ""
+  );
+}
 
-  const mode = String(meta.mode || "").toLowerCase();
-  const modeId = String(meta.mode_id || "").toLowerCase();
-  const queue = String(meta.queue || "").toLowerCase();
+function isCompetitive(match) {
+  const mode = String(match.mode || getMode(match)).toLowerCase();
 
   return (
     mode.includes("competitive") ||
-    modeId.includes("competitive") ||
-    queue.includes("competitive") ||
     mode.includes("コンペ")
   );
 }
@@ -276,70 +292,75 @@ function didMyTeamWin(match) {
   return null;
 }
 
-// ===============================
-// 保存済みと今回取得分を合体
-// ===============================
-function mergeMatches(saved, latest) {
+function simplifyMatch(match) {
+  const me = findMyPlayer(match);
+  const won = didMyTeamWin(match);
+
+  return {
+    id: getMatchId(match),
+    timestamp: getMatchTimestamp(match),
+    map: getMapName(match),
+    mode: getMode(match),
+    won,
+    kills: Number(me?.stats?.kills ?? me?.kills ?? 0),
+    deaths: Number(me?.stats?.deaths ?? me?.deaths ?? 0),
+    assists: Number(me?.stats?.assists ?? me?.assists ?? 0)
+  };
+}
+
+function mergeMatches(saved, latestRaw) {
+  const latest = latestRaw
+    .map(simplifyMatch)
+    .filter(match => match.id);
+
   const map = new Map();
 
   for (const match of saved) {
-    const id = getMatchId(match);
-    if (id) map.set(id, match);
+    if (match.id) map.set(match.id, match);
   }
 
   let added = 0;
 
   for (const match of latest) {
-    const id = getMatchId(match);
-    if (!id) continue;
-
-    if (!map.has(id)) {
-      added++;
-    }
-
-    map.set(id, match);
+    if (!map.has(match.id)) added++;
+    map.set(match.id, match);
   }
 
   const merged = Array.from(map.values()).sort((a, b) => {
-    return getMatchTimestamp(b) - getMatchTimestamp(a);
+    return b.timestamp - a.timestamp;
   });
 
   return { merged, added };
 }
 
-function filterActMatches(matches) {
-  const actStartMs = new Date(CONFIG.actStart).getTime();
-
-  return matches.filter(match => {
-    const t = getMatchTimestamp(match);
-    return t >= actStartMs;
-  });
-}
-
 // ===============================
-// 集計
+// 直近試合の勝率・KD
 // ===============================
-function calculateStats(matches) {
-  const competitiveMatches = matches.filter(isCompetitive);
+function calculateRecentMatchStats(matches) {
+  const recent = matches
+    .filter(isCompetitive)
+    .slice(0, CONFIG.recentMatchCount);
 
   let wins = 0;
   let losses = 0;
   let unknown = 0;
+  let kills = 0;
+  let deaths = 0;
+  let assists = 0;
 
-  for (const match of competitiveMatches) {
-    const won = didMyTeamWin(match);
+  for (const match of recent) {
+    if (match.won === true) wins++;
+    else if (match.won === false) losses++;
+    else unknown++;
 
-    if (won === true) {
-      wins++;
-    } else if (won === false) {
-      losses++;
-    } else {
-      unknown++;
-    }
+    kills += Number(match.kills || 0);
+    deaths += Number(match.deaths || 0);
+    assists += Number(match.assists || 0);
   }
 
-  const played = competitiveMatches.length;
+  const played = recent.length;
   const winRate = played > 0 ? Math.round((wins / played) * 100) : 0;
+  const kd = deaths > 0 ? (kills / deaths).toFixed(2) : kills.toFixed(2);
 
   return {
     played,
@@ -347,7 +368,192 @@ function calculateStats(matches) {
     losses,
     unknown,
     winRate,
-    matches: competitiveMatches
+    kills,
+    deaths,
+    assists,
+    kd,
+    matches: recent
+  };
+}
+
+// ===============================
+// MMR / RR計算
+// ===============================
+function getCurrentElo(mmr) {
+  if (typeof mmr?.elo === "number") return mmr.elo;
+
+  if (typeof mmr?.current_data?.elo === "number") {
+    return mmr.current_data.elo;
+  }
+
+  const tier = Number(mmr?.currenttier ?? mmr?.current_data?.currenttier ?? 0);
+  const rr = Number(mmr?.ranking_in_tier ?? mmr?.current_data?.ranking_in_tier ?? 0);
+
+  if (tier > 0) return tier * 100 + rr;
+
+  return 0;
+}
+
+function getCurrentRR(mmr) {
+  return Number(
+    mmr?.ranking_in_tier ??
+    mmr?.current_data?.ranking_in_tier ??
+    0
+  );
+}
+
+function getCurrentRankName(mmr) {
+  return (
+    mmr?.currenttierpatched ||
+    mmr?.current_data?.currenttierpatched ||
+    "不明"
+  );
+}
+
+function getRRChange(item) {
+  const candidates = [
+    item?.mmr_change_to_last_game,
+    item?.mmr_change,
+    item?.rr_change,
+    item?.change,
+    item?.elo_change
+  ];
+
+  for (const value of candidates) {
+    const n = Number(value);
+    if (!Number.isNaN(n) && n !== 0) return n;
+  }
+
+  return 0;
+}
+
+function calculateRRStats(mmrHistory) {
+  const recentChanges = mmrHistory
+    .map(item => getRRChange(item))
+    .filter(n => n !== 0)
+    .slice(0, CONFIG.recentMatchCount);
+
+  const winChanges = recentChanges.filter(n => n > 0);
+  const lossChanges = recentChanges.filter(n => n < 0);
+
+  const avgWinRR =
+    winChanges.length > 0
+      ? Math.round(winChanges.reduce((a, b) => a + b, 0) / winChanges.length)
+      : 0;
+
+  const avgLossRR =
+    lossChanges.length > 0
+      ? Math.round(Math.abs(lossChanges.reduce((a, b) => a + b, 0) / lossChanges.length))
+      : 0;
+
+  const avgRRPerMatch =
+    recentChanges.length > 0
+      ? Math.round((recentChanges.reduce((a, b) => a + b, 0) / recentChanges.length) * 10) / 10
+      : 0;
+
+  return {
+    recentRRCount: recentChanges.length,
+    avgWinRR,
+    avgLossRR,
+    avgRRPerMatch,
+    recentChanges
+  };
+}
+
+function calculateChallenge(mmr, mmrHistory) {
+  const now = new Date();
+  const deadline = new Date(CONFIG.challengeEnd);
+
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const daysLeft = Math.max(0, Math.ceil((deadline - now) / msPerDay));
+
+  const currentElo = getCurrentElo(mmr);
+  const currentRR = getCurrentRR(mmr);
+  const currentRank = getCurrentRankName(mmr);
+
+  const remainingRR = Math.max(0, CONFIG.targetElo - currentElo);
+
+  const rrStats = calculateRRStats(mmrHistory);
+  const avgRRPerMatch = rrStats.avgRRPerMatch;
+
+  const neededMatches =
+    avgRRPerMatch > 0
+      ? Math.ceil(remainingRR / avgRRPerMatch)
+      : null;
+
+  const requiredRRPerDay =
+    daysLeft > 0
+      ? Math.ceil(remainingRR / daysLeft)
+      : remainingRR;
+
+  return {
+    daysLeft,
+    currentElo,
+    currentRR,
+    currentRank,
+    remainingRR,
+    neededMatches,
+    requiredRRPerDay,
+    ...rrStats
+  };
+}
+
+function calculateArrivalDate(challenge) {
+  const daysInput = getEl("playDaysPerWeek");
+  const matchesInput = getEl("matchesPerDay");
+
+  const playDaysPerWeek = Number(daysInput?.value || 0);
+  const matchesPerDay = Number(matchesInput?.value || 0);
+
+  if (!challenge || challenge.remainingRR <= 0) {
+    return {
+      status: "到達済み",
+      note: "到達予定日：到達済み\nチャレンジ成功"
+    };
+  }
+
+  if (challenge.avgRRPerMatch <= 0) {
+    return {
+      status: "到達不可",
+      note: "到達予定日：算出不可\nチャレンジ失敗"
+    };
+  }
+
+  if (playDaysPerWeek <= 0 || matchesPerDay <= 0) {
+    return {
+      status: "入力不足",
+      note: "到達予定日：入力不足\n週日数と試合数を入力"
+    };
+  }
+
+  const matchesPerWeek = playDaysPerWeek * matchesPerDay;
+  const expectedRRPerWeek = matchesPerWeek * challenge.avgRRPerMatch;
+
+  if (expectedRRPerWeek <= 0) {
+    return {
+      status: "到達不可",
+      note: "到達予定日：算出不可\nチャレンジ失敗"
+    };
+  }
+
+  const weeksNeeded = challenge.remainingRR / expectedRRPerWeek;
+  const daysNeeded = Math.ceil(weeksNeeded * 7);
+
+  const arrival = new Date();
+  arrival.setDate(arrival.getDate() + daysNeeded);
+
+  const deadline = new Date(CONFIG.challengeEnd);
+  const canReachByDeadline = arrival <= deadline;
+
+  const arrivalText = new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(arrival);
+
+  return {
+    status: canReachByDeadline ? "到達可能" : "到達不可",
+    note: `到達予定日：${arrivalText}\nチャレンジ${canReachByDeadline ? "成功" : "失敗"}`
   };
 }
 
@@ -365,27 +571,66 @@ function formatDate(ms) {
   }).format(new Date(ms));
 }
 
-function renderStats(stats, allSaved, added) {
+function renderRecentStats(stats, challenge) {
   setText("matchCount", stats.played);
   setText("winCount", stats.wins);
   setText("lossCount", stats.losses);
   setText("winRate", `${stats.winRate}%`);
-  setText("savedCount", allSaved.length);
-  setText("addedCount", added);
+
+  setText("recentKD", stats.kd);
+  setText("recentKDA", `${stats.kills} / ${stats.deaths} / ${stats.assists}`);
 
   const latest = stats.matches[0];
-  const latestTime = latest ? getMatchTimestamp(latest) : 0;
-
+  const latestTime = latest ? latest.timestamp : 0;
   setText("latestMatch", latestTime ? formatDate(latestTime) : "なし");
-  setText("periodText", "集計期間：2026/6/24〜現在");
 
   const unknownText =
-    stats.unknown > 0 ? ` / 勝敗不明 ${stats.unknown}試合` : "";
+    stats.unknown > 0 ? `、勝敗不明${stats.unknown}試合` : "";
+
+  const rrText = challenge
+    ? `平均RR ${challenge.avgRRPerMatch}RR/試合、勝利時平均 +${challenge.avgWinRR}RR、敗北時平均 -${challenge.avgLossRR}RR。`
+    : "";
 
   setText(
     "summaryText",
-    `今Actのコンペは${stats.played}試合、${stats.wins}勝${stats.losses}敗、勝率${stats.winRate}%です${unknownText}。`
+    `直近${stats.played}試合：${stats.wins}勝${stats.losses}敗${unknownText}、勝率${stats.winRate}%、KD ${stats.kd}。${rrText}`
   );
+}
+
+function renderChallenge(challenge) {
+  lastChallenge = challenge;
+
+  setText("currentRank", challenge.currentRank);
+  setText("currentRR", challenge.currentRR);
+  setText("remainingRR", challenge.remainingRR);
+  setText("avgRRPerMatch", challenge.avgRRPerMatch);
+  setText("avgWinRR", challenge.avgWinRR);
+  setText("avgLossRR", challenge.avgLossRR);
+  setText("requiredRRPerDay", challenge.requiredRRPerDay);
+
+  if (challenge.neededMatches === null) {
+    setText("neededMatches", "到達不可");
+  } else {
+    setText("neededMatches", `${challenge.neededMatches}試合`);
+  }
+
+  const result = calculateArrivalDate(challenge);
+
+  const statusEl = getEl("challengeStatus");
+  if (statusEl) {
+    statusEl.textContent = result.status;
+    statusEl.classList.remove("ok", "ng");
+
+    if (result.status === "到達可能" || result.status === "到達済み") {
+      statusEl.classList.add("ok");
+    }
+
+    if (result.status === "到達不可") {
+      statusEl.classList.add("ng");
+    }
+  }
+
+  setText("challengeNote", result.note);
 }
 
 function renderMatchList(matches) {
@@ -397,22 +642,25 @@ function renderMatchList(matches) {
     return;
   }
 
-  const html = matches.slice(0, 15).map(match => {
-    const won = didMyTeamWin(match);
-    const resultText = won === true ? "WIN" : won === false ? "LOSS" : "UNKNOWN";
-    const resultClass = won === true ? "win" : won === false ? "loss" : "unknown";
+  const html = matches.map(match => {
+    const resultText =
+      match.won === true ? "WIN" :
+      match.won === false ? "LOSS" :
+      "UNKNOWN";
 
-    const map = getMapName(match);
-    const date = formatDate(getMatchTimestamp(match));
+    const resultClass =
+      match.won === true ? "win" :
+      match.won === false ? "loss" :
+      "unknown";
 
     return `
       <div class="match-item">
         <div class="match-result ${resultClass}">${resultText}</div>
         <div>
-          <div class="match-map">${map}</div>
-          <div class="match-date">${date}</div>
+          <div class="match-map">${match.map}</div>
+          <div class="match-date">${formatDate(match.timestamp)}</div>
         </div>
-        <div class="match-date">Competitive</div>
+        <div class="match-date">K/D ${match.kills}/${match.deaths}</div>
       </div>
     `;
   }).join("");
@@ -421,31 +669,29 @@ function renderMatchList(matches) {
 }
 
 // ===============================
-// メイン処理
+// メイン
 // ===============================
 async function main() {
   try {
     setText("statusText", "取得中...");
-    debug("main開始");
 
     const saved = loadSavedMatches();
-    debug("保存済み試合数", saved.length);
 
-    const latest = await fetchLatestMatches();
-    debug("今回取得試合数", latest.length);
+    const [latestRaw, currentMMR, mmrHistory] = await Promise.all([
+      fetchLatestMatches(),
+      fetchCurrentMMR(),
+      fetchMMRHistory()
+    ]);
 
-    const { merged, added } = mergeMatches(saved, latest);
+    const { merged, added } = mergeMatches(saved, latestRaw);
     saveMatches(merged);
 
-    const actMatches = filterActMatches(merged);
-    const stats = calculateStats(actMatches);
+    const recentStats = calculateRecentMatchStats(merged);
+    const challenge = calculateChallenge(currentMMR, mmrHistory);
 
-    debug("保存後合計", merged.length);
-    debug("今Act対象", actMatches.length);
-    debug("集計結果", stats);
-
-    renderStats(stats, merged, added);
-    renderMatchList(stats.matches);
+    renderRecentStats(recentStats, challenge);
+    renderChallenge(challenge);
+    renderMatchList(recentStats.matches);
 
     setText(
       "statusText",
@@ -454,7 +700,6 @@ async function main() {
 
   } catch (error) {
     console.error(error);
-    debug("ERROR", error.message);
     setText("statusText", `取得エラー：${error.message}`);
   }
 }
@@ -463,10 +708,9 @@ async function main() {
 // 起動
 // ===============================
 function setup() {
-  debug("script.js 読み込み成功");
-
   const reloadButton = getEl("reloadButton");
   const resetButton = getEl("resetButton");
+  const calcPaceButton = getEl("calcPaceButton");
 
   if (reloadButton) {
     reloadButton.addEventListener("click", main);
@@ -474,6 +718,14 @@ function setup() {
 
   if (resetButton) {
     resetButton.addEventListener("click", clearSavedMatches);
+  }
+
+  if (calcPaceButton) {
+    calcPaceButton.addEventListener("click", () => {
+      if (lastChallenge) {
+        renderChallenge(lastChallenge);
+      }
+    });
   }
 
   main();
