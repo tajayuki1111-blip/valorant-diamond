@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VALORANT Act Tracker</title>
+  <title>VALORANT Diamond Challenge</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="app">
     <section class="hero">
       <div>
-        <p class="eyebrow">VALORANT ACT TRACKER</p>
+        <p class="eyebrow">VALORANT DIAMOND CHALLENGE</p>
         <h1>Diamond Challenge</h1>
         <p class="subtitle">
-          直近50試合を取得して、localStorageに保存。保存済みデータから今Actの戦績を集計します。
+          直近試合のKD・勝率・RR推移から、Diamond 1到達予定日を計算します。
         </p>
       </div>
 
@@ -25,12 +25,12 @@
 
     <section class="status-card">
       <p id="statusText">待機中</p>
-      <p id="periodText">集計期間：2026/6/24〜現在</p>
+      <p id="periodText">目標期限：2026/9/1</p>
     </section>
 
     <section class="stats-grid">
       <div class="stat-card main">
-        <div class="stat-label">今Act 試合数</div>
+        <div class="stat-label">直近試合数</div>
         <div class="stat-value" id="matchCount">0</div>
       </div>
 
@@ -51,35 +51,99 @@
     </section>
 
     <section class="summary-card">
-      <h2>Summary</h2>
+      <h2>Recent Data</h2>
       <p id="summaryText">読み込み中...</p>
 
       <div class="small-grid">
         <div>
+          <span class="small-label">KD</span>
+          <strong id="recentKD">0.00</strong>
+        </div>
+
+        <div>
+          <span class="small-label">K / D / A</span>
+          <strong id="recentKDA">0 / 0 / 0</strong>
+        </div>
+
+        <div>
           <span class="small-label">最新試合</span>
           <strong id="latestMatch">なし</strong>
         </div>
+      </div>
+    </section>
 
+    <section class="challenge-card">
+      <h2>Diamond Challenge</h2>
+
+      <div class="challenge-grid">
         <div>
-          <span class="small-label">保存済み</span>
-          <strong><span id="savedCount">0</span>試合</strong>
+          <span class="small-label">現在ランク</span>
+          <strong id="currentRank">取得中</strong>
         </div>
 
         <div>
-          <span class="small-label">今回追加</span>
-          <strong><span id="addedCount">0</span>試合</strong>
+          <span class="small-label">現在RR</span>
+          <strong><span id="currentRR">0</span>RR</strong>
+        </div>
+
+        <div>
+          <span class="small-label">Diamond 1まで</span>
+          <strong><span id="remainingRR">0</span>RR</strong>
+        </div>
+
+        <div>
+          <span class="small-label">平均RR</span>
+          <strong><span id="avgRRPerMatch">0</span>RR/試合</strong>
+        </div>
+
+        <div>
+          <span class="small-label">勝利時 平均+RR</span>
+          <strong>+<span id="avgWinRR">0</span>RR</strong>
+        </div>
+
+        <div>
+          <span class="small-label">敗北時 平均-RR</span>
+          <strong>-<span id="avgLossRR">0</span>RR</strong>
+        </div>
+
+        <div>
+          <span class="small-label">必要試合数</span>
+          <strong id="neededMatches">計算中</strong>
+        </div>
+
+        <div>
+          <span class="small-label">9/1まで必要平均</span>
+          <strong><span id="requiredRRPerDay">0</span>RR/日</strong>
+        </div>
+
+        <div>
+          <span class="small-label">判定</span>
+          <strong id="challengeStatus">計算中</strong>
         </div>
       </div>
+
+      <div class="pace-box">
+        <label>
+          週に何日やる？
+          <input id="playDaysPerWeek" type="number" min="1" max="7" value="4">
+        </label>
+
+        <label>
+          1日何試合やる？
+          <input id="matchesPerDay" type="number" min="1" max="20" value="4">
+        </label>
+
+        <button id="calcPaceButton" type="button">予定日を計算</button>
+      </div>
+
+      <p class="challenge-note" id="challengeNote">
+        MMR履歴を取得中...
+      </p>
     </section>
 
     <section class="action-card">
       <button id="reloadButton">再取得する</button>
       <button id="resetButton" class="danger">保存データをリセット</button>
-    </section>
-
-    <section class="error-card">
-      <h2>Debug</h2>
-      <pre id="debugText">まだログはありません。</pre>
     </section>
 
     <section class="log-card">
