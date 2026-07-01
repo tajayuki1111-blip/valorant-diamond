@@ -1,9 +1,9 @@
 // ===============================
 // VALORANT Act Tracker
 // Henrik API + localStorage蓄積版
+// デバッグ表示あり
 // ===============================
 
-// ===== 設定 =====
 const CONFIG = {
   riotName: "松本絃歩",
   riotTag: "ギャル",
@@ -22,7 +22,9 @@ const CONFIG = {
   storageKey: "valorant_matches_cache_v1"
 };
 
-// ===== DOM =====
+// ===============================
+// DOM
+// ===============================
 function setText(id, value) {
   const el = document.getElementById(id);
   if (el) el.textContent = value;
@@ -32,7 +34,30 @@ function getEl(id) {
   return document.getElementById(id);
 }
 
-// ===== localStorage =====
+function debug(message, data) {
+  const el = getEl("debugText");
+  const time = new Date().toLocaleTimeString("ja-JP");
+
+  let text = `[${time}] ${message}`;
+
+  if (data !== undefined) {
+    try {
+      text += "\n" + JSON.stringify(data, null, 2);
+    } catch (e) {
+      text += "\n" + String(data);
+    }
+  }
+
+  console.log(message, data ?? "");
+
+  if (el) {
+    el.textContent = text + "\n\n" + el.textContent;
+  }
+}
+
+// ===============================
+// localStorage
+// ===============================
 function loadSavedMatches() {
   try {
     const raw = localStorage.getItem(CONFIG.storageKey);
@@ -41,7 +66,7 @@ function loadSavedMatches() {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
   } catch (error) {
-    console.error("保存データ読み込み失敗:", error);
+    debug("保存データ読み込み失敗", error.message);
     return [];
   }
 }
@@ -58,7 +83,9 @@ function clearSavedMatches() {
   location.reload();
 }
 
-// ===== Henrik API =====
+// ===============================
+// Henrik API
+// ===============================
 async function fetchLatestMatches() {
   const encodedName = encodeURIComponent(CONFIG.riotName);
   const encodedTag = encodeURIComponent(CONFIG.riotTag);
@@ -66,32 +93,49 @@ async function fetchLatestMatches() {
   const url =
     `https://api.henrikdev.xyz/valorant/v3/matches/${CONFIG.region}/${encodedName}/${encodedTag}?size=${CONFIG.fetchSize}`;
 
-  console.log("fetch URL:", url);
+  debug("fetch URL", url);
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization: CONFIG.apiKey
-    }
-  });
+  let response;
 
-  const data = await response.json();
+  try {
+    response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${CONFIG.apiKey}`
+      }
+    });
+  } catch (error) {
+    throw new Error(`通信失敗: ${error.message}`);
+  }
 
-  console.log("HTTP status:", response.status);
-  console.log("API raw:", data);
+  const text = await response.text();
+
+  debug("HTTP status", response.status);
+  debug("raw text", text.slice(0, 1000));
+
+  let data;
+
+  try {
+    data = JSON.parse(text);
+  } catch (error) {
+    throw new Error("JSONに変換できません。APIがHTMLやエラー文を返しています。");
+  }
+
+  debug("API raw", data);
 
   if (!response.ok) {
     throw new Error(`API取得失敗: HTTP ${response.status}`);
   }
 
   if (!Array.isArray(data.data)) {
-    console.error("data.data が配列ではありません:", data);
-    return [];
+    throw new Error("data.data が配列ではありません。API rawを確認してください。");
   }
 
   return data.data;
 }
 
-// ===== match情報取り出し =====
+// ===============================
+// match情報取り出し
+// ===============================
 function getMatchId(match) {
   return (
     match?.metadata?.matchid ||
@@ -229,7 +273,9 @@ function didMyTeamWin(match) {
   return null;
 }
 
-// ===== 保存済みと今回取得分を合体 =====
+// ===============================
+// 保存済みと今回取得分を合体
+// ===============================
 function mergeMatches(saved, latest) {
   const map = new Map();
 
@@ -267,7 +313,9 @@ function filterActMatches(matches) {
   });
 }
 
-// ===== 集計 =====
+// ===============================
+// 集計
+// ===============================
 function calculateStats(matches) {
   const competitiveMatches = matches.filter(isCompetitive);
 
@@ -300,7 +348,9 @@ function calculateStats(matches) {
   };
 }
 
-// ===== 表示 =====
+// ===============================
+// 表示
+// ===============================
 function formatDate(ms) {
   if (!ms) return "不明";
 
@@ -367,27 +417,29 @@ function renderMatchList(matches) {
   list.innerHTML = html;
 }
 
-// ===== メイン処理 =====
+// ===============================
+// メイン処理
+// ===============================
 async function main() {
   try {
     setText("statusText", "取得中...");
+    debug("main開始");
 
     const saved = loadSavedMatches();
-    const latest = await fetchLatestMatches();
+    debug("保存済み試合数", saved.length);
 
-    console.log("保存済み:", saved.length);
-    console.log("今回取得:", latest.length);
+    const latest = await fetchLatestMatches();
+    debug("今回取得試合数", latest.length);
 
     const { merged, added } = mergeMatches(saved, latest);
-
     saveMatches(merged);
 
     const actMatches = filterActMatches(merged);
     const stats = calculateStats(actMatches);
 
-    console.log("保存後合計:", merged.length);
-    console.log("今Act対象:", actMatches.length);
-    console.log("集計結果:", stats);
+    debug("保存後合計", merged.length);
+    debug("今Act対象", actMatches.length);
+    debug("集計結果", stats);
 
     renderStats(stats, merged, added);
     renderMatchList(stats.matches);
@@ -399,13 +451,16 @@ async function main() {
 
   } catch (error) {
     console.error(error);
-    setText("statusText", "取得エラー。Consoleを確認してください。");
+    debug("ERROR", error.message);
+    setText("statusText", `取得エラー：${error.message}`);
   }
 }
 
-
+// ===============================
+// 起動
+// ===============================
 function setup() {
-  console.log("script.js 読み込み成功");
+  debug("script.js 読み込み成功");
 
   const reloadButton = getEl("reloadButton");
   const resetButton = getEl("resetButton");
