@@ -1,7 +1,7 @@
 // ===============================
 // VALORANT Diamond Challenge
 // Henrik API + localStorage軽量保存
-// 直近試合データ + MMR履歴で到達予定日を計算
+// 必要RRは「ランク名 + 現在RR」から計算
 // ===============================
 
 const CONFIG = {
@@ -13,6 +13,9 @@ const CONFIG = {
 
   // 目標期限
   challengeEnd: "2026-09-01T23:59:59+09:00",
+
+  // 目標ランク
+  targetRank: "Diamond 1",
 
   // 直近何試合で勝率・KD・平均RRを計算するか
   recentMatchCount: 10,
@@ -26,14 +29,38 @@ const CONFIG = {
   // 保存上限
   maxSavedMatches: 300,
 
-  // Diamond 1のHenrik elo目安
-  // 今の表示でDiamond 1までの必要RRが大きめに出るように調整
-  targetElo: 2100,
-
-  storageKey: "valorant_matches_cache_challenge_v2"
+  storageKey: "valorant_matches_cache_challenge_v3"
 };
 
 let lastChallenge = null;
+
+const RANK_ORDER = [
+  "Iron 1",
+  "Iron 2",
+  "Iron 3",
+  "Bronze 1",
+  "Bronze 2",
+  "Bronze 3",
+  "Silver 1",
+  "Silver 2",
+  "Silver 3",
+  "Gold 1",
+  "Gold 2",
+  "Gold 3",
+  "Platinum 1",
+  "Platinum 2",
+  "Platinum 3",
+  "Diamond 1",
+  "Diamond 2",
+  "Diamond 3",
+  "Ascendant 1",
+  "Ascendant 2",
+  "Ascendant 3",
+  "Immortal 1",
+  "Immortal 2",
+  "Immortal 3",
+  "Radiant"
+];
 
 // ===============================
 // DOM
@@ -76,6 +103,7 @@ function clearSavedMatches() {
   localStorage.removeItem("valorant_matches_cache_light_v2");
   localStorage.removeItem("valorant_matches_cache_challenge_v1");
   localStorage.removeItem("valorant_matches_cache_challenge_v2");
+  localStorage.removeItem("valorant_matches_cache_challenge_v3");
 
   location.reload();
 }
@@ -388,21 +416,42 @@ function calculateRecentMatchStats(matches) {
 }
 
 // ===============================
-// MMR / RR計算
+// ランク・必要RR計算
 // ===============================
-function getCurrentElo(mmr) {
-  if (typeof mmr?.elo === "number") return mmr.elo;
+function normalizeRankName(rankName) {
+  const raw = String(rankName || "").trim();
 
-  if (typeof mmr?.current_data?.elo === "number") {
-    return mmr.current_data.elo;
+  const lower = raw.toLowerCase();
+
+  const rankMap = [
+    "Iron",
+    "Bronze",
+    "Silver",
+    "Gold",
+    "Platinum",
+    "Diamond",
+    "Ascendant",
+    "Immortal",
+    "Radiant"
+  ];
+
+  for (const rank of rankMap) {
+    const rankLower = rank.toLowerCase();
+
+    if (lower.includes(rankLower)) {
+      if (rank === "Radiant") return "Radiant";
+
+      const m = raw.match(/[123]/);
+      if (m) return `${rank} ${m[0]}`;
+    }
   }
 
-  const tier = Number(mmr?.currenttier ?? mmr?.current_data?.currenttier ?? 0);
-  const rr = Number(mmr?.ranking_in_tier ?? mmr?.current_data?.ranking_in_tier ?? 0);
+  return raw;
+}
 
-  if (tier > 0) return tier * 100 + rr;
-
-  return 0;
+function getRankIndex(rankName) {
+  const normalized = normalizeRankName(rankName);
+  return RANK_ORDER.indexOf(normalized);
 }
 
 function getCurrentRR(mmr) {
@@ -421,6 +470,24 @@ function getCurrentRankName(mmr) {
   );
 }
 
+function calculateRemainingRR(currentRank, currentRR) {
+  const currentIndex = getRankIndex(currentRank);
+  const targetIndex = getRankIndex(CONFIG.targetRank);
+
+  if (currentIndex === -1 || targetIndex === -1) {
+    return 0;
+  }
+
+  if (currentIndex >= targetIndex) {
+    return 0;
+  }
+
+  return Math.max(0, (targetIndex - currentIndex) * 100 - currentRR);
+}
+
+// ===============================
+// MMR / RR履歴計算
+// ===============================
 function getRRChange(item) {
   const candidates = [
     item?.mmr_change_to_last_game,
@@ -489,11 +556,10 @@ function calculateChallenge(mmr, mmrHistory) {
   const msPerDay = 1000 * 60 * 60 * 24;
   const daysLeft = Math.max(0, Math.ceil((deadline - now) / msPerDay));
 
-  const currentElo = getCurrentElo(mmr);
   const currentRR = getCurrentRR(mmr);
   const currentRank = getCurrentRankName(mmr);
 
-  const remainingRR = Math.max(0, CONFIG.targetElo - currentElo);
+  const remainingRR = calculateRemainingRR(currentRank, currentRR);
 
   const rrStats = calculateRRStats(mmrHistory);
   const avgRRPerMatch = rrStats.avgRRPerMatch;
@@ -510,7 +576,6 @@ function calculateChallenge(mmr, mmrHistory) {
 
   return {
     daysLeft,
-    currentElo,
     currentRR,
     currentRank,
     remainingRR,
@@ -625,7 +690,6 @@ function renderChallenge(challenge) {
   setText("bigDaysLeft", challenge.daysLeft);
   setText("bigCurrentRank", challenge.currentRank);
   setText("bigCurrentRR", challenge.currentRR);
-  setText("bigRemainingRR", challenge.remainingRR);
   setText("topRemainingRR", challenge.remainingRR);
 
   setText("currentRR", challenge.currentRR);
