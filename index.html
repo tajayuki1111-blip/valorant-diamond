@@ -11,7 +11,10 @@
     <section class="hero stream-hero">
       <div class="hero-main">
         <p class="eyebrow">VALORANT RANK CHALLENGE</p>
-        <h1>DJ Foy<br>ダイヤモンドチャレンジ</h1>
+        <h1>
+          <span class="title-en">DJ Foy</span>
+          <span class="title-ja">ダイヤモンドチャレンジ</span>
+        </h1>
         <p class="subtitle">
           9/1までにDiamond 1到達を目指すランク企画。直近試合のRRペースから到達予定日を自動計算。
         </p>
@@ -127,8 +130,9 @@
 
         <div>
           <span>勝敗</span>
-          <strong>
-            <span id="winCount">0</span>勝 <span id="lossCount">0</span>敗
+          <strong class="record-line">
+            <b id="winCount">0</b><small>勝</small>
+            <b id="lossCount">0</b><small>敗</small>
           </strong>
         </div>
 
@@ -195,6 +199,6 @@
     </section>
   </main>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=4"></script>
 </body>
 </html>
