@@ -346,3 +346,74 @@ button.danger {
     font-size: 42px;
   }
 }
+.pace-box {
+  margin-top: 22px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 14px;
+  align-items: end;
+  background: rgba(2, 6, 23, 0.55);
+  border: 1px solid rgba(255, 70, 85, 0.22);
+  border-radius: 20px;
+}
+
+.pace-box label {
+  display: block;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.pace-box input {
+  width: 100%;
+  margin-top: 8px;
+  padding: 15px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.95);
+  color: #f8fafc;
+  font-size: 22px;
+  font-weight: 950;
+  outline: none;
+}
+
+.pace-box input:focus {
+  border-color: rgba(255, 70, 85, 0.85);
+  box-shadow: 0 0 0 4px rgba(255, 70, 85, 0.12);
+}
+
+#calcPaceButton {
+  height: 54px;
+  padding: 0 22px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ff4655, #ff7a85);
+  color: white;
+  font-size: 15px;
+  font-weight: 950;
+  white-space: nowrap;
+  box-shadow: 0 14px 30px rgba(255, 70, 85, 0.25);
+}
+
+.challenge-note {
+  margin-top: 16px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(2, 6, 23, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  color: #f8fafc;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+@media (max-width: 800px) {
+  .pace-box {
+    grid-template-columns: 1fr;
+  }
+
+  #calcPaceButton {
+    width: 100%;
+  }
+}
