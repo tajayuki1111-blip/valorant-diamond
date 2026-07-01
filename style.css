@@ -255,7 +255,6 @@ h2 {
 
 .status-pill {
   display: inline-flex;
-  margin-top: 0;
   flex-shrink: 0;
   padding: 12px 18px;
   border-radius: 999px;
@@ -313,17 +312,18 @@ h2 {
   font-size: 16px;
 }
 
-/* METRICS */
+/* PACE METRICS */
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
 }
 
 .metric-card {
   min-width: 0;
-  padding: 18px;
+  min-height: 118px;
+  padding: 22px;
   border-radius: 18px;
   background: rgba(2, 6, 23, 0.52);
   border: 1px solid rgba(148, 163, 184, 0.12);
@@ -338,22 +338,25 @@ h2 {
 }
 
 .metric-card strong {
-  display: flex;
+  display: flex !important;
   align-items: baseline;
   flex-wrap: nowrap;
-  gap: 6px;
+  gap: 10px !important;
   white-space: nowrap;
-  font-size: 26px;
+  font-size: clamp(30px, 4vw, 42px) !important;
   font-weight: 1000;
-  letter-spacing: -0.05em;
-  line-height: 1.1;
+  letter-spacing: -0.035em !important;
+  line-height: 1;
 }
 
+.metric-card strong span,
 .metric-card strong small {
-  font-size: 13px;
-  font-weight: 850;
-  color: #94a3b8;
-  letter-spacing: 0;
+  display: inline-block;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: 1;
+  letter-spacing: -0.035em !important;
+  color: #f8fafc;
 }
 
 /* PACE INPUT */
@@ -472,21 +475,18 @@ button.danger {
 .record-line {
   display: flex !important;
   align-items: baseline;
-  gap: 7px;
+  gap: 6px;
   white-space: nowrap;
 }
 
-.record-line b {
-  font-size: clamp(34px, 4.5vw, 46px);
+.record-line b,
+.record-line small {
+  display: inline-block;
+  font-size: clamp(32px, 4vw, 42px) !important;
   font-weight: 1000;
   line-height: 1;
   letter-spacing: -0.06em;
-}
-
-.record-line small {
-  font-size: 16px;
-  font-weight: 950;
-  color: #94a3b8;
+  color: #f8fafc;
 }
 
 .value-unit {
@@ -633,7 +633,7 @@ button.danger {
   }
 
   .metric-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .compact-stats {
@@ -701,7 +701,6 @@ button.danger {
     font-size: 30px;
   }
 
-  .metric-grid,
   .compact-stats {
     grid-template-columns: 1fr;
   }
@@ -711,17 +710,20 @@ button.danger {
   }
 
   .record-line b,
+  .record-line small {
+    font-size: 36px !important;
+  }
+
   .value-unit b {
     font-size: 38px;
   }
 
-  .record-line small,
   .value-unit small {
     font-size: 15px;
   }
 
   .metric-card strong {
-    font-size: 24px;
+    font-size: 32px !important;
   }
 
   .days-main {
@@ -731,49 +733,8 @@ button.danger {
   .rank-main {
     font-size: 40px;
   }
-}
-/* ===============================
-   Win/Loss same size fix
-================================ */
 
-.record-line {
-  display: flex !important;
-  align-items: baseline;
-  gap: 6px;
-  white-space: nowrap;
-}
-
-.record-line b,
-.record-line small {
-  display: inline-block;
-  font-size: clamp(32px, 4vw, 42px) !important;
-  font-weight: 1000;
-  line-height: 1;
-  letter-spacing: -0.06em;
-  color: #f8fafc;
-}
-/* ===============================
-   Pace metric same size fix
-   平均RR / 9月1日まで必要 / Diamond 1まで
-================================ */
-
-.metric-card strong {
-  display: flex !important;
-  align-items: baseline;
-  gap: 6px;
-  white-space: nowrap;
-  font-size: clamp(30px, 4vw, 42px) !important;
-  font-weight: 1000;
-  line-height: 1;
-  letter-spacing: -0.06em;
-}
-
-.metric-card strong span,
-.metric-card strong small {
-  display: inline-block;
-  font-size: inherit !important;
-  font-weight: inherit !important;
-  line-height: 1;
-  letter-spacing: -0.06em;
-  color: #f8fafc;
+  .required-main span {
+    font-size: 56px;
+  }
 }
