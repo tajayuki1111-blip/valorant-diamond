@@ -13,7 +13,7 @@
         <p class="eyebrow">VALORANT ACT TRACKER</p>
         <h1>Diamond Challenge</h1>
         <p class="subtitle">
-          Henrik APIで直近試合を取得し、localStorageに保存して今Actの戦績を集計します。
+          直近50試合を取得して、localStorageに保存。保存済みデータから今Actの戦績を集計します。
         </p>
       </div>
 
@@ -75,6 +75,11 @@
     <section class="action-card">
       <button id="reloadButton">再取得する</button>
       <button id="resetButton" class="danger">保存データをリセット</button>
+    </section>
+
+    <section class="error-card">
+      <h2>Debug</h2>
+      <pre id="debugText">まだログはありません。</pre>
     </section>
 
     <section class="log-card">
