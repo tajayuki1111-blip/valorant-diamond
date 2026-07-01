@@ -10,6 +10,7 @@ const CONFIG = {
   region: "ap",
 
   // 注意：公開サイトに直書きするとAPIキーは見えます
+  // 401が出る場合、このキーが無効です。HenrikDevで新しいAPIキーを作って入れ替えてください。
   apiKey: "HDEV-cfe7edcd-5fca-4a04-a777-181a3a74aa60",
 
   // 今Act開始日
@@ -100,7 +101,9 @@ async function fetchLatestMatches() {
   try {
     response = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${CONFIG.apiKey}`
+        // ここ重要：Bearer は付けない
+        Authorization: CONFIG.apiKey,
+        Accept: "*/*"
       }
     });
   } catch (error) {
