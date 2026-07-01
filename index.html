@@ -3,23 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VALORANT Diamond Challenge</title>
+  <title>DJ Foy ダイヤモンドチャレンジ</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="app">
-    <section class="hero compact">
-      <div>
-        <p class="eyebrow">VALORANT DIAMOND CHALLENGE</p>
-        <h1>Diamond Challenge</h1>
+    <section class="hero stream-hero">
+      <div class="hero-main">
+        <p class="eyebrow">VALORANT RANK CHALLENGE</p>
+        <h1>DJ Foy<br>ダイヤモンドチャレンジ</h1>
         <p class="subtitle">
-          直近試合のRRペースから、Diamond 1到達予定日を計算。
+          9/1までにDiamond 1到達を目指すランク企画。直近試合のRRペースから到達予定日を自動計算。
         </p>
       </div>
 
-      <div class="player-card compact-card">
-        <div class="player-name">松本絃歩</div>
-        <div class="player-tag">#ギャル</div>
+      <div class="stream-badge">
+        <span>LIVE PROJECT</span>
+        <strong>DIAMOND<br>ROAD</strong>
       </div>
     </section>
 
@@ -34,15 +34,26 @@
         <span class="panel-label">現在ランク</span>
         <div class="rank-main" id="bigCurrentRank">取得中</div>
         <p>
-          現在 <span id="bigCurrentRR">0</span>RR / Diamond 1まで <span id="bigRemainingRR">0</span>RR
+          現在 <span id="bigCurrentRR">0</span>RR
         </p>
       </div>
 
       <div class="arrival-panel">
-        <span class="panel-label">到達予測</span>
-        <div class="arrival-text" id="challengeNote">計算中...</div>
-        <div class="status-pill" id="challengeStatus">計算中</div>
+        <span class="panel-label">必要RR</span>
+        <div class="required-main">
+          <span id="topRemainingRR">0</span><small>RR</small>
+        </div>
+        <p>Diamond 1まで</p>
       </div>
+    </section>
+
+    <section class="forecast-strip">
+      <div>
+        <span class="panel-label">到達予定</span>
+        <div class="forecast-text" id="challengeNote">計算中...</div>
+      </div>
+
+      <div class="status-pill" id="challengeStatus">計算中</div>
     </section>
 
     <section class="challenge-card">
@@ -61,17 +72,26 @@
 
         <div class="metric-card">
           <span>平均RR</span>
-          <strong><span id="avgRRPerMatch">0</span>RR/試合</strong>
+          <strong>
+            <span id="avgRRPerMatch">0</span>
+            <small>RR/試合</small>
+          </strong>
         </div>
 
         <div class="metric-card">
           <span>9/1まで必要</span>
-          <strong><span id="requiredRRPerDay">0</span>RR/日</strong>
+          <strong>
+            <span id="requiredRRPerDay">0</span>
+            <small>RR/日</small>
+          </strong>
         </div>
 
         <div class="metric-card">
           <span>Diamond 1まで</span>
-          <strong><span id="remainingRR">0</span>RR</strong>
+          <strong>
+            <span id="remainingRR">0</span>
+            <small>RR</small>
+          </strong>
         </div>
       </div>
 
@@ -107,7 +127,9 @@
 
         <div>
           <span>勝敗</span>
-          <strong><span id="winCount">0</span>勝 <span id="lossCount">0</span>敗</strong>
+          <strong>
+            <span id="winCount">0</span>勝 <span id="lossCount">0</span>敗
+          </strong>
         </div>
 
         <div>
@@ -132,17 +154,23 @@
 
         <div>
           <span>勝利時平均</span>
-          <strong>+<span id="avgWinRR">0</span>RR</strong>
+          <strong class="value-unit">
+            <b>+</b><b id="avgWinRR">0</b><small>RR</small>
+          </strong>
         </div>
 
         <div>
           <span>敗北時平均</span>
-          <strong>-<span id="avgLossRR">0</span>RR</strong>
+          <strong class="value-unit">
+            <b>-</b><b id="avgLossRR">0</b><small>RR</small>
+          </strong>
         </div>
 
         <div>
           <span>現在RR</span>
-          <strong><span id="currentRR">0</span>RR</strong>
+          <strong class="value-unit">
+            <b id="currentRR">0</b><small>RR</small>
+          </strong>
         </div>
       </div>
     </section>
