@@ -1,6 +1,6 @@
 // ===============================
 // VALORANT Diamond Challenge
-// Henrik API + localStorage軽量保存
+// Henrik API + localStorage
 // 必要RRは「ランク名 + 現在RR」から計算
 // ===============================
 
@@ -11,25 +11,18 @@ const CONFIG = {
 
   apiKey: "HDEV-cfe7edcd-5fca-4a04-a777-181a3a74aa60",
 
-  // 目標期限
   challengeEnd: "2026-09-01T23:59:59+09:00",
-
-  // 目標ランク
   targetRank: "Diamond 1",
 
-  // 直近何試合で勝率・KD・平均RRを計算するか
   recentMatchCount: 10,
 
-  // 勝利時+RRは直近勝利5戦、敗北時-RRは直近敗北5戦で計算
+  // 勝利時平均RR・敗北時平均RRはそれぞれ直近5試合で計算
   recentWinLossRRCount: 5,
 
-  // APIに要求する試合数
   fetchSize: 50,
-
-  // 保存上限
   maxSavedMatches: 300,
 
-  storageKey: "valorant_matches_cache_challenge_v3"
+  storageKey: "valorant_matches_cache_challenge_v5"
 };
 
 let lastChallenge = null;
@@ -65,6 +58,7 @@ const RANK_ORDER = [
 // ===============================
 // DOM
 // ===============================
+
 function setText(id, value) {
   const el = document.getElementById(id);
   if (el) el.textContent = value;
@@ -77,6 +71,7 @@ function getEl(id) {
 // ===============================
 // localStorage
 // ===============================
+
 function loadSavedMatches() {
   try {
     const raw = localStorage.getItem(CONFIG.storageKey);
@@ -104,6 +99,8 @@ function clearSavedMatches() {
   localStorage.removeItem("valorant_matches_cache_challenge_v1");
   localStorage.removeItem("valorant_matches_cache_challenge_v2");
   localStorage.removeItem("valorant_matches_cache_challenge_v3");
+  localStorage.removeItem("valorant_matches_cache_challenge_v4");
+  localStorage.removeItem("valorant_matches_cache_challenge_v5");
 
   location.reload();
 }
@@ -111,6 +108,7 @@ function clearSavedMatches() {
 // ===============================
 // API
 // ===============================
+
 function getEncodedPlayer() {
   return {
     name: encodeURIComponent(CONFIG.riotName),
@@ -191,6 +189,7 @@ async function fetchMMRHistory() {
 // ===============================
 // 試合データ処理
 // ===============================
+
 function getMatchId(match) {
   return (
     match?.metadata?.matchid ||
@@ -373,8 +372,9 @@ function mergeMatches(saved, latestRaw) {
 }
 
 // ===============================
-// 直近試合の勝率・KD
+// 直近試合データ
 // ===============================
+
 function calculateRecentMatchStats(matches) {
   const recent = matches
     .filter(isCompetitive)
@@ -418,9 +418,9 @@ function calculateRecentMatchStats(matches) {
 // ===============================
 // ランク・必要RR計算
 // ===============================
+
 function normalizeRankName(rankName) {
   const raw = String(rankName || "").trim();
-
   const lower = raw.toLowerCase();
 
   const rankMap = [
@@ -486,8 +486,9 @@ function calculateRemainingRR(currentRank, currentRR) {
 }
 
 // ===============================
-// MMR / RR履歴計算
+// RR履歴計算
 // ===============================
+
 function getRRChange(item) {
   const candidates = [
     item?.mmr_change_to_last_game,
@@ -510,15 +511,12 @@ function calculateRRStats(mmrHistory) {
     .map(item => getRRChange(item))
     .filter(n => n !== 0);
 
-  // 平均RR/試合は直近10試合
   const recentChanges = changes.slice(0, CONFIG.recentMatchCount);
 
-  // 勝利時+RRは直近の勝利5試合
   const recentWins = changes
     .filter(n => n > 0)
     .slice(0, CONFIG.recentWinLossRRCount);
 
-  // 敗北時-RRは直近の敗北5試合
   const recentLosses = changes
     .filter(n => n < 0)
     .slice(0, CONFIG.recentWinLossRRCount);
@@ -549,6 +547,10 @@ function calculateRRStats(mmrHistory) {
   };
 }
 
+// ===============================
+// チャレンジ計算
+// ===============================
+
 function calculateChallenge(mmr, mmrHistory) {
   const now = new Date();
   const deadline = new Date(CONFIG.challengeEnd);
@@ -569,6 +571,11 @@ function calculateChallenge(mmr, mmrHistory) {
       ? Math.ceil(remainingRR / avgRRPerMatch)
       : null;
 
+  const neededMatchesPerDay =
+    neededMatches === null || daysLeft <= 0
+      ? null
+      : Math.ceil((neededMatches / daysLeft) * 10) / 10;
+
   const requiredRRPerDay =
     daysLeft > 0
       ? Math.ceil(remainingRR / daysLeft)
@@ -580,6 +587,7 @@ function calculateChallenge(mmr, mmrHistory) {
     currentRank,
     remainingRR,
     neededMatches,
+    neededMatchesPerDay,
     requiredRRPerDay,
     ...rrStats
   };
@@ -647,6 +655,7 @@ function calculateArrivalDate(challenge) {
 // ===============================
 // 表示
 // ===============================
+
 function formatDate(ms) {
   if (!ms) return "不明";
 
@@ -693,16 +702,15 @@ function renderChallenge(challenge) {
   setText("topRemainingRR", challenge.remainingRR);
 
   setText("currentRR", challenge.currentRR);
-  setText("remainingRR", challenge.remainingRR);
   setText("avgRRPerMatch", challenge.avgRRPerMatch);
   setText("avgWinRR", challenge.avgWinRR);
   setText("avgLossRR", challenge.avgLossRR);
   setText("requiredRRPerDay", challenge.requiredRRPerDay);
 
-  if (challenge.neededMatches === null) {
-    setText("neededMatches", "到達不可");
+  if (challenge.neededMatchesPerDay === null) {
+    setText("neededMatchesPerDay", "∞");
   } else {
-    setText("neededMatches", `${challenge.neededMatches}試合`);
+    setText("neededMatchesPerDay", challenge.neededMatchesPerDay);
   }
 
   const result = calculateArrivalDate(challenge);
@@ -762,6 +770,7 @@ function renderMatchList(matches) {
 // ===============================
 // メイン
 // ===============================
+
 async function main() {
   try {
     setText("statusText", "取得中...");
@@ -798,6 +807,7 @@ async function main() {
 // ===============================
 // 起動
 // ===============================
+
 function setup() {
   const reloadButton = getEl("reloadButton");
   const resetButton = getEl("resetButton");
