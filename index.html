@@ -8,146 +8,159 @@
 </head>
 <body>
   <main class="app">
-    <section class="hero">
+    <section class="hero compact">
       <div>
         <p class="eyebrow">VALORANT DIAMOND CHALLENGE</p>
         <h1>Diamond Challenge</h1>
         <p class="subtitle">
-          直近試合のKD・勝率・RR推移から、Diamond 1到達予定日を計算します。
+          直近試合のRRペースから、Diamond 1到達予定日を計算。
         </p>
       </div>
 
-      <div class="player-card">
+      <div class="player-card compact-card">
         <div class="player-name">松本絃歩</div>
         <div class="player-tag">#ギャル</div>
       </div>
     </section>
 
-    <section class="status-card">
-      <p id="statusText">待機中</p>
-      <p id="periodText">目標期限：2026/9/1</p>
-    </section>
-
-    <section class="stats-grid">
-      <div class="stat-card main">
-        <div class="stat-label">直近試合数</div>
-        <div class="stat-value" id="matchCount">0</div>
+    <section class="dashboard-hero">
+      <div class="countdown-panel">
+        <span class="panel-label">チャレンジ終了まで</span>
+        <div class="days-main">あと <span id="bigDaysLeft">0</span> 日</div>
+        <p>目標期限：2026/9/1</p>
       </div>
 
-      <div class="stat-card">
-        <div class="stat-label">勝利数</div>
-        <div class="stat-value" id="winCount">0</div>
+      <div class="result-panel">
+        <span class="panel-label">現在ランク</span>
+        <div class="rank-main" id="bigCurrentRank">取得中</div>
+        <p>
+          現在 <span id="bigCurrentRR">0</span>RR / Diamond 1まで <span id="bigRemainingRR">0</span>RR
+        </p>
       </div>
 
-      <div class="stat-card">
-        <div class="stat-label">敗北数</div>
-        <div class="stat-value" id="lossCount">0</div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-label">勝率</div>
-        <div class="stat-value" id="winRate">0%</div>
-      </div>
-    </section>
-
-    <section class="summary-card">
-      <h2>Recent Data</h2>
-      <p id="summaryText">読み込み中...</p>
-
-      <div class="small-grid">
-        <div>
-          <span class="small-label">KD</span>
-          <strong id="recentKD">0.00</strong>
-        </div>
-
-        <div>
-          <span class="small-label">K / D / A</span>
-          <strong id="recentKDA">0 / 0 / 0</strong>
-        </div>
-
-        <div>
-          <span class="small-label">最新試合</span>
-          <strong id="latestMatch">なし</strong>
-        </div>
+      <div class="arrival-panel">
+        <span class="panel-label">到達予測</span>
+        <div class="arrival-text" id="challengeNote">計算中...</div>
+        <div class="status-pill" id="challengeStatus">計算中</div>
       </div>
     </section>
 
     <section class="challenge-card">
-      <h2>Diamond Challenge</h2>
-
-      <div class="challenge-grid">
+      <div class="section-head">
         <div>
-          <span class="small-label">現在ランク</span>
-          <strong id="currentRank">取得中</strong>
-        </div>
-
-        <div>
-          <span class="small-label">現在RR</span>
-          <strong><span id="currentRR">0</span>RR</strong>
-        </div>
-
-        <div>
-          <span class="small-label">Diamond 1まで</span>
-          <strong><span id="remainingRR">0</span>RR</strong>
-        </div>
-
-        <div>
-          <span class="small-label">平均RR</span>
-          <strong><span id="avgRRPerMatch">0</span>RR/試合</strong>
-        </div>
-
-        <div>
-          <span class="small-label">勝利時 平均+RR</span>
-          <strong>+<span id="avgWinRR">0</span>RR</strong>
-        </div>
-
-        <div>
-          <span class="small-label">敗北時 平均-RR</span>
-          <strong>-<span id="avgLossRR">0</span>RR</strong>
-        </div>
-
-        <div>
-          <span class="small-label">必要試合数</span>
-          <strong id="neededMatches">計算中</strong>
-        </div>
-
-        <div>
-          <span class="small-label">9/1まで必要平均</span>
-          <strong><span id="requiredRRPerDay">0</span>RR/日</strong>
-        </div>
-
-        <div>
-          <span class="small-label">判定</span>
-          <strong id="challengeStatus">計算中</strong>
+          <p class="eyebrow small">PACE</p>
+          <h2>必要ペース</h2>
         </div>
       </div>
 
-      <div class="pace-box">
+      <div class="metric-grid">
+        <div class="metric-card">
+          <span>必要試合数</span>
+          <strong id="neededMatches">計算中</strong>
+        </div>
+
+        <div class="metric-card">
+          <span>平均RR</span>
+          <strong><span id="avgRRPerMatch">0</span>RR/試合</strong>
+        </div>
+
+        <div class="metric-card">
+          <span>9/1まで必要</span>
+          <strong><span id="requiredRRPerDay">0</span>RR/日</strong>
+        </div>
+
+        <div class="metric-card">
+          <span>Diamond 1まで</span>
+          <strong><span id="remainingRR">0</span>RR</strong>
+        </div>
+      </div>
+
+      <div class="pace-box redesigned">
         <label>
-          週に何日やる？
+          <span>週に何日やる？</span>
           <input id="playDaysPerWeek" type="number" min="1" max="7" value="4">
         </label>
 
         <label>
-          1日何試合やる？
+          <span>1日何試合やる？</span>
           <input id="matchesPerDay" type="number" min="1" max="20" value="4">
         </label>
 
-        <button id="calcPaceButton" type="button">予定日を計算</button>
+        <button id="calcPaceButton" type="button">予定日を再計算</button>
+      </div>
+    </section>
+
+    <section class="data-section">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow small">RECENT DATA</p>
+          <h2>直近試合データ</h2>
+        </div>
+        <p id="summaryText">読み込み中...</p>
       </div>
 
-      <p class="challenge-note" id="challengeNote">
-        MMR履歴を取得中...
-      </p>
+      <div class="compact-stats">
+        <div>
+          <span>試合数</span>
+          <strong id="matchCount">0</strong>
+        </div>
+
+        <div>
+          <span>勝敗</span>
+          <strong><span id="winCount">0</span>勝 <span id="lossCount">0</span>敗</strong>
+        </div>
+
+        <div>
+          <span>勝率</span>
+          <strong id="winRate">0%</strong>
+        </div>
+
+        <div>
+          <span>KD</span>
+          <strong id="recentKD">0.00</strong>
+        </div>
+
+        <div>
+          <span>K / D / A</span>
+          <strong id="recentKDA">0 / 0 / 0</strong>
+        </div>
+
+        <div>
+          <span>最新試合</span>
+          <strong id="latestMatch">なし</strong>
+        </div>
+
+        <div>
+          <span>勝利時平均</span>
+          <strong>+<span id="avgWinRR">0</span>RR</strong>
+        </div>
+
+        <div>
+          <span>敗北時平均</span>
+          <strong>-<span id="avgLossRR">0</span>RR</strong>
+        </div>
+
+        <div>
+          <span>現在RR</span>
+          <strong><span id="currentRR">0</span>RR</strong>
+        </div>
+      </div>
     </section>
 
     <section class="action-card">
       <button id="reloadButton">再取得する</button>
       <button id="resetButton" class="danger">保存データをリセット</button>
+      <p id="statusText">待機中</p>
     </section>
 
     <section class="log-card">
-      <h2>Recent Matches</h2>
+      <div class="section-head">
+        <div>
+          <p class="eyebrow small">MATCH LOG</p>
+          <h2>Recent Matches</h2>
+        </div>
+      </div>
+
       <div id="matchList" class="match-list">
         <p class="muted">まだ試合データがありません。</p>
       </div>
