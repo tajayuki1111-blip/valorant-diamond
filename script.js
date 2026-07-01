@@ -1,4 +1,4 @@
-  // ===============================
+// ===============================
 // VALORANT Diamond Challenge
 // Henrik API + localStorage軽量保存
 // 直近試合データ + MMR履歴で到達予定日を計算
@@ -9,23 +9,28 @@ const CONFIG = {
   riotTag: "ギャル",
   region: "ap",
 
-  // ここにHenrik APIキーを入れる
   apiKey: "HDEV-cfe7edcd-5fca-4a04-a777-181a3a74aa60",
 
   // 目標期限
   challengeEnd: "2026-09-01T23:59:59+09:00",
 
-  // 直近何試合で計算するか
+  // 直近何試合で勝率・KD・平均RRを計算するか
   recentMatchCount: 10,
+
+  // 勝利時+RRは直近勝利5戦、敗北時-RRは直近敗北5戦で計算
+  recentWinLossRRCount: 5,
 
   // APIに要求する試合数
   fetchSize: 50,
 
-  // Diamond 1のHenrik elo目安
-  // Bronze 3 63RR ≒ 863、Diamond 1 0RR ≒ 1800 のような計算
-  targetElo: 1800,
+  // 保存上限
+  maxSavedMatches: 300,
 
-  storageKey: "valorant_matches_cache_challenge_v1"
+  // Diamond 1のHenrik elo目安
+  // Bronze 3 63RRでDiamond 1まで約1237RRになるように 2100 で設定
+  targetElo: 2100,
+
+  storageKey: "valorant_matches_cache_challenge_v2"
 };
 
 let lastChallenge = null;
@@ -62,10 +67,16 @@ function saveMatches(matches) {
 }
 
 function clearSavedMatches() {
+  const ok = confirm("保存済みの試合データをリセットしますか？");
+  if (!ok) return;
+
   localStorage.removeItem(CONFIG.storageKey);
   localStorage.removeItem("valorant_matches_cache_v1");
   localStorage.removeItem("valorant_matches_cache_light_v1");
   localStorage.removeItem("valorant_matches_cache_light_v2");
+  localStorage.removeItem("valorant_matches_cache_challenge_v1");
+  localStorage.removeItem("valorant_matches_cache_challenge_v2");
+
   location.reload();
 }
 
@@ -326,9 +337,9 @@ function mergeMatches(saved, latestRaw) {
     map.set(match.id, match);
   }
 
-  const merged = Array.from(map.values()).sort((a, b) => {
-    return b.timestamp - a.timestamp;
-  });
+  const merged = Array.from(map.values())
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, CONFIG.maxSavedMatches);
 
   return { merged, added };
 }
@@ -428,22 +439,31 @@ function getRRChange(item) {
 }
 
 function calculateRRStats(mmrHistory) {
-  const recentChanges = mmrHistory
+  const changes = mmrHistory
     .map(item => getRRChange(item))
-    .filter(n => n !== 0)
-    .slice(0, CONFIG.recentMatchCount);
+    .filter(n => n !== 0);
 
-  const winChanges = recentChanges.filter(n => n > 0);
-  const lossChanges = recentChanges.filter(n => n < 0);
+  // 平均RR/試合は直近10試合
+  const recentChanges = changes.slice(0, CONFIG.recentMatchCount);
+
+  // 勝利時+RRは直近の勝利5試合
+  const recentWins = changes
+    .filter(n => n > 0)
+    .slice(0, CONFIG.recentWinLossRRCount);
+
+  // 敗北時-RRは直近の敗北5試合
+  const recentLosses = changes
+    .filter(n => n < 0)
+    .slice(0, CONFIG.recentWinLossRRCount);
 
   const avgWinRR =
-    winChanges.length > 0
-      ? Math.round(winChanges.reduce((a, b) => a + b, 0) / winChanges.length)
+    recentWins.length > 0
+      ? Math.round(recentWins.reduce((a, b) => a + b, 0) / recentWins.length)
       : 0;
 
   const avgLossRR =
-    lossChanges.length > 0
-      ? Math.round(Math.abs(lossChanges.reduce((a, b) => a + b, 0) / lossChanges.length))
+    recentLosses.length > 0
+      ? Math.round(Math.abs(recentLosses.reduce((a, b) => a + b, 0) / recentLosses.length))
       : 0;
 
   const avgRRPerMatch =
@@ -456,7 +476,9 @@ function calculateRRStats(mmrHistory) {
     avgWinRR,
     avgLossRR,
     avgRRPerMatch,
-    recentChanges
+    recentChanges,
+    recentWinCountForRR: recentWins.length,
+    recentLossCountForRR: recentLosses.length
   };
 }
 
@@ -588,7 +610,7 @@ function renderRecentStats(stats, challenge) {
     stats.unknown > 0 ? `、勝敗不明${stats.unknown}試合` : "";
 
   const rrText = challenge
-    ? `平均RR ${challenge.avgRRPerMatch}RR/試合、勝利時平均 +${challenge.avgWinRR}RR、敗北時平均 -${challenge.avgLossRR}RR。`
+    ? `平均RR ${challenge.avgRRPerMatch}RR/試合、直近勝利${challenge.recentWinCountForRR}戦の平均 +${challenge.avgWinRR}RR、直近敗北${challenge.recentLossCountForRR}戦の平均 -${challenge.avgLossRR}RR。`
     : "";
 
   setText(
@@ -600,7 +622,11 @@ function renderRecentStats(stats, challenge) {
 function renderChallenge(challenge) {
   lastChallenge = challenge;
 
-  setText("currentRank", challenge.currentRank);
+  setText("bigDaysLeft", challenge.daysLeft);
+  setText("bigCurrentRank", challenge.currentRank);
+  setText("bigCurrentRR", challenge.currentRR);
+  setText("bigRemainingRR", challenge.remainingRR);
+
   setText("currentRR", challenge.currentRR);
   setText("remainingRR", challenge.remainingRR);
   setText("avgRRPerMatch", challenge.avgRRPerMatch);
