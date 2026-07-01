@@ -732,3 +732,23 @@ button.danger {
     font-size: 40px;
   }
 }
+/* ===============================
+   Win/Loss same size fix
+================================ */
+
+.record-line {
+  display: flex !important;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.record-line b,
+.record-line small {
+  display: inline-block;
+  font-size: clamp(32px, 4vw, 42px) !important;
+  font-weight: 1000;
+  line-height: 1;
+  letter-spacing: -0.06em;
+  color: #f8fafc;
+}
