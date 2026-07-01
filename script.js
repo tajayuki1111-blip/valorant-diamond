@@ -1,423 +1,420 @@
+// ===============================
+// VALORANT Act Tracker
+// Henrik API + localStorage蓄積版
+// ===============================
+
+// ===== 設定 =====
 const CONFIG = {
   riotName: "松本絃歩",
   riotTag: "ギャル",
   region: "ap",
+
+  // 注意：公開サイトに直書きするとAPIキーは見えます
   apiKey: "HDEV-cfe7edcd-5fca-4a04-a777-181a3a74aa60",
 
-  targetRank: "Diamond 1",
-  targetDate: "2026-09-01T00:00:00+09:00",
-
   // 今Act開始日
-  actStartDate: "2026-06-24T00:00:00+09:00",
+  actStart: "2026-06-24T00:00:00+09:00",
 
-  // 取得する試合数。足りなければ50に変更
-  matchSize: 50
+  // 一度に取る最大試合数
+  fetchSize: 50,
+
+  // localStorage保存キー
+  storageKey: "valorant_matches_cache_v1"
 };
 
-const rankPoints = {
-  "Iron 1": 0,
-  "Iron 2": 100,
-  "Iron 3": 200,
-  "Bronze 1": 300,
-  "Bronze 2": 400,
-  "Bronze 3": 500,
-  "Silver 1": 600,
-  "Silver 2": 700,
-  "Silver 3": 800,
-  "Gold 1": 900,
-  "Gold 2": 1000,
-  "Gold 3": 1100,
-  "Platinum 1": 1200,
-  "Platinum 2": 1300,
-  "Platinum 3": 1400,
-  "Diamond 1": 1500,
-  "Diamond 2": 1600,
-  "Diamond 3": 1700,
-  "Ascendant 1": 1800,
-  "Ascendant 2": 1900,
-  "Ascendant 3": 2000,
-  "Immortal 1": 2100,
-  "Immortal 2": 2200,
-  "Immortal 3": 2300,
-  "Radiant": 2400
-};
-
-function round1(value) {
-  return Math.round(value * 10) / 10;
-}
-
-function setText(id, text) {
+// ===== DOM =====
+function setText(id, value) {
   const el = document.getElementById(id);
-  if (el) el.textContent = text;
+  if (el) el.textContent = value;
 }
 
-function formatDate(date) {
-  return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+function getEl(id) {
+  return document.getElementById(id);
 }
 
-async function apiFetch(url) {
-  const res = await fetch(url, {
+// ===== localStorage =====
+function loadSavedMatches() {
+  try {
+    const raw = localStorage.getItem(CONFIG.storageKey);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.error("保存データ読み込み失敗:", error);
+    return [];
+  }
+}
+
+function saveMatches(matches) {
+  localStorage.setItem(CONFIG.storageKey, JSON.stringify(matches));
+}
+
+function clearSavedMatches() {
+  const ok = confirm("保存済みの試合データをリセットしますか？");
+  if (!ok) return;
+
+  localStorage.removeItem(CONFIG.storageKey);
+  location.reload();
+}
+
+// ===== Henrik API =====
+async function fetchLatestMatches() {
+  const encodedName = encodeURIComponent(CONFIG.riotName);
+  const encodedTag = encodeURIComponent(CONFIG.riotTag);
+
+  const url =
+    `https://api.henrikdev.xyz/valorant/v3/matches/${CONFIG.region}/${encodedName}/${encodedTag}?size=${CONFIG.fetchSize}`;
+
+  console.log("fetch URL:", url);
+
+  const response = await fetch(url, {
     headers: {
       Authorization: CONFIG.apiKey
     }
   });
 
-  if (!res.ok) {
-    throw new Error(`${res.status} ${res.statusText}`);
+  const data = await response.json();
+
+  console.log("HTTP status:", response.status);
+  console.log("API raw:", data);
+
+  if (!response.ok) {
+    throw new Error(`API取得失敗: HTTP ${response.status}`);
   }
 
-  return await res.json();
+  if (!Array.isArray(data.data)) {
+    console.error("data.data が配列ではありません:", data);
+    return [];
+  }
+
+  return data.data;
 }
 
-async function fetchCurrentMMR() {
-  const url =
-    `https://api.henrikdev.xyz/valorant/v2/mmr/${CONFIG.region}/` +
-    `${encodeURIComponent(CONFIG.riotName)}/` +
-    `${encodeURIComponent(CONFIG.riotTag)}`;
-
-  return await apiFetch(url);
+// ===== match情報取り出し =====
+function getMatchId(match) {
+  return (
+    match?.metadata?.matchid ||
+    match?.metadata?.match_id ||
+    match?.metadata?.id ||
+    match?.match_id ||
+    match?.id ||
+    null
+  );
 }
 
-async function fetchMMRHistory() {
-  const url =
-    `https://api.henrikdev.xyz/valorant/v1/mmr-history/${CONFIG.region}/` +
-    `${encodeURIComponent(CONFIG.riotName)}/` +
-    `${encodeURIComponent(CONFIG.riotTag)}`;
+function getMatchTimestamp(match) {
+  const meta = match?.metadata || {};
 
-  return await apiFetch(url);
+  if (typeof meta.game_start === "number") {
+    return meta.game_start * 1000;
+  }
+
+  if (typeof meta.game_start_ms === "number") {
+    return meta.game_start_ms;
+  }
+
+  const candidates = [
+    meta.game_start_patched,
+    meta.started_at,
+    meta.start_time,
+    match?.started_at,
+    match?.start_time
+  ];
+
+  for (const value of candidates) {
+    if (!value) continue;
+
+    const t = new Date(value).getTime();
+    if (!Number.isNaN(t)) return t;
+  }
+
+  return 0;
 }
 
-async function fetchMatches() {
-  const url =
-    `https://api.henrikdev.xyz/valorant/v3/matches/${CONFIG.region}/` +
-    `${encodeURIComponent(CONFIG.riotName)}/` +
-    `${encodeURIComponent(CONFIG.riotTag)}` +
-    `?filter=competitive&size=${CONFIG.matchSize}`;
-
-  return await apiFetch(url);
+function getMapName(match) {
+  return (
+    match?.metadata?.map ||
+    match?.metadata?.map_name ||
+    "Unknown Map"
+  );
 }
 
-function getDateFromHistory(game) {
-  const rawDate =
-    game.date ||
-    game.date_raw ||
-    game.started_at ||
-    game.match_start ||
-    game.match_start_time;
+function isCompetitive(match) {
+  const meta = match?.metadata || {};
 
-  if (!rawDate) return null;
+  const mode = String(meta.mode || "").toLowerCase();
+  const modeId = String(meta.mode_id || "").toLowerCase();
+  const queue = String(meta.queue || "").toLowerCase();
 
-  const date = new Date(rawDate);
-  return isNaN(date) ? null : date;
-}
-
-function getMatchDate(match) {
-  const metadata = match.metadata || {};
-
-  const rawDate =
-    metadata.started_at ||
-    metadata.game_start ||
-    metadata.game_start_patched ||
-    metadata.match_start_time ||
-    metadata.game_start_time;
-
-  if (!rawDate) return null;
-
-  const date = new Date(rawDate);
-  return isNaN(date) ? null : date;
+  return (
+    mode.includes("competitive") ||
+    modeId.includes("competitive") ||
+    queue.includes("competitive") ||
+    mode.includes("コンペ")
+  );
 }
 
 function getAllPlayers(match) {
-  const players = match.players || {};
-
-  if (Array.isArray(players.all_players)) {
-    return players.all_players;
+  if (Array.isArray(match?.players?.all_players)) {
+    return match.players.all_players;
   }
 
-  const red = Array.isArray(players.red) ? players.red : [];
-  const blue = Array.isArray(players.blue) ? players.blue : [];
+  if (Array.isArray(match?.players)) {
+    return match.players;
+  }
 
-  return [...red, ...blue];
+  return [];
 }
 
-function getPlayerName(player) {
-  return (
-    player.name ||
-    player.game_name ||
-    player.username ||
-    player.player_name ||
+function findMyPlayer(match) {
+  const players = getAllPlayers(match);
+
+  const myName = CONFIG.riotName.toLowerCase();
+  const myTag = CONFIG.riotTag.toLowerCase();
+
+  return players.find(player => {
+    const name = String(
+      player?.name ||
+      player?.gameName ||
+      player?.riotIdGameName ||
+      ""
+    ).toLowerCase();
+
+    const tag = String(
+      player?.tag ||
+      player?.tagLine ||
+      player?.riotIdTagline ||
+      ""
+    ).toLowerCase();
+
+    return name === myName && tag === myTag;
+  });
+}
+
+function getPlayerTeam(player) {
+  if (!player) return null;
+
+  return String(
+    player.team ||
+    player.team_id ||
+    player.teamId ||
     ""
-  );
+  ).toLowerCase();
 }
 
-function getPlayerTag(player) {
-  return (
-    player.tag ||
-    player.tag_line ||
-    player.tagline ||
-    player.player_tag ||
-    ""
-  );
-}
-
-function normalizeTeam(team) {
-  if (!team) return "";
-
-  const value = String(team).toLowerCase();
-
-  if (value === "red") return "red";
-  if (value === "blue") return "blue";
-
-  return value;
-}
-
-function getTeamResult(match, myTeam) {
-  const teams = match.teams || {};
-  const team = normalizeTeam(myTeam);
+function didMyTeamWin(match) {
+  const me = findMyPlayer(match);
+  const team = getPlayerTeam(me);
 
   if (!team) return null;
 
-  const teamData = teams[team];
+  const teams = match?.teams || {};
 
-  if (!teamData) return null;
+  const redWon =
+    teams?.red?.has_won ??
+    teams?.Red?.has_won ??
+    teams?.red?.won ??
+    teams?.Red?.won;
 
-  if (typeof teamData.has_won === "boolean") {
-    return teamData.has_won;
-  }
+  const blueWon =
+    teams?.blue?.has_won ??
+    teams?.Blue?.has_won ??
+    teams?.blue?.won ??
+    teams?.Blue?.won;
 
-  if (typeof teamData.won === "boolean") {
-    return teamData.won;
-  }
-
-  if (typeof teamData.winner === "boolean") {
-    return teamData.winner;
-  }
+  if (team.includes("red")) return Boolean(redWon);
+  if (team.includes("blue")) return Boolean(blueWon);
 
   return null;
 }
 
-function calculateProgress(currentRank, currentRR, averageWinRR) {
-  const today = new Date();
-  const targetDate = new Date(CONFIG.targetDate);
+// ===== 保存済みと今回取得分を合体 =====
+function mergeMatches(saved, latest) {
+  const map = new Map();
 
-  const currentTotalRR = rankPoints[currentRank] + currentRR;
-  const targetTotalRR = rankPoints[CONFIG.targetRank];
+  for (const match of saved) {
+    const id = getMatchId(match);
+    if (id) map.set(id, match);
+  }
 
-  const requiredRR = Math.max(targetTotalRR - currentTotalRR, 0);
+  let added = 0;
 
-  const msPerDay = 1000 * 60 * 60 * 24;
+  for (const match of latest) {
+    const id = getMatchId(match);
+    if (!id) continue;
 
-  const remainingDays = Math.max(
-    Math.ceil((targetDate - today) / msPerDay),
-    0
-  );
+    if (!map.has(id)) {
+      added++;
+    }
 
-  const remainingWeeks = remainingDays > 0 ? remainingDays / 7 : 0;
+    map.set(id, match);
+  }
 
-  const dailyRequiredRR =
-    remainingDays > 0 ? round1(requiredRR / remainingDays) : requiredRR;
-
-  const weeklyRequiredRR =
-    remainingWeeks > 0 ? round1(requiredRR / remainingWeeks) : requiredRR;
-
-  const totalRequiredWins =
-    averageWinRR > 0 ? Math.ceil(requiredRR / averageWinRR) : 0;
-
-  const dailyRequiredWins =
-    remainingDays > 0
-      ? round1(totalRequiredWins / remainingDays)
-      : totalRequiredWins;
-
-  const weeklyRequiredWins =
-    remainingWeeks > 0
-      ? round1(totalRequiredWins / remainingWeeks)
-      : totalRequiredWins;
-
-  return {
-    requiredRR,
-    remainingDays,
-    dailyRequiredRR,
-    weeklyRequiredRR,
-    totalRequiredWins,
-    dailyRequiredWins,
-    weeklyRequiredWins
-  };
-}
-
-function getRRStats(historyJson) {
-  const games = historyJson.data || [];
-  const actStart = new Date(CONFIG.actStartDate);
-
-  const validGames = games.filter(game => {
-    const rr = game.mmr_change_to_last_game;
-    const date = getDateFromHistory(game);
-
-    return (
-      typeof rr === "number" &&
-      rr !== 0 &&
-      date &&
-      date >= actStart
-    );
+  const merged = Array.from(map.values()).sort((a, b) => {
+    return getMatchTimestamp(b) - getMatchTimestamp(a);
   });
 
-  const rrChanges = validGames.map(game => game.mmr_change_to_last_game);
-
-  const wins = rrChanges.filter(rr => rr > 0);
-  const losses = rrChanges.filter(rr => rr < 0);
-
-  const avgWinRR =
-    wins.length > 0
-      ? round1(wins.reduce((sum, rr) => sum + rr, 0) / wins.length)
-      : 22;
-
-  const avgLossRR =
-    losses.length > 0
-      ? round1(losses.reduce((sum, rr) => sum + rr, 0) / losses.length)
-      : 0;
-
-  return {
-    avgWinRR,
-    avgLossRR
-  };
+  return { merged, added };
 }
 
-function getActMatchStats(matchesJson) {
-  const matches = matchesJson.data || [];
-  const actStart = new Date(CONFIG.actStartDate);
+function filterActMatches(matches) {
+  const actStartMs = new Date(CONFIG.actStart).getTime();
 
-  let matchCount = 0;
+  return matches.filter(match => {
+    const t = getMatchTimestamp(match);
+    return t >= actStartMs;
+  });
+}
+
+// ===== 集計 =====
+function calculateStats(matches) {
+  const competitiveMatches = matches.filter(isCompetitive);
+
   let wins = 0;
   let losses = 0;
-  let kills = 0;
-  let deaths = 0;
+  let unknown = 0;
 
-  for (const match of matches) {
-    const matchDate = getMatchDate(match);
+  for (const match of competitiveMatches) {
+    const won = didMyTeamWin(match);
 
-    if (matchDate && matchDate < actStart) {
-      continue;
-    }
-
-    const players = getAllPlayers(match);
-
-    const me = players.find(player => {
-      const name = getPlayerName(player).toLowerCase();
-      const tag = getPlayerTag(player).toLowerCase();
-
-      return (
-        name === CONFIG.riotName.toLowerCase() &&
-        tag === CONFIG.riotTag.toLowerCase()
-      );
-    });
-
-    if (!me) {
-      continue;
-    }
-
-    const didWin = getTeamResult(match, me.team);
-
-    if (didWin === true) {
-      wins += 1;
-      matchCount += 1;
-    } else if (didWin === false) {
-      losses += 1;
-      matchCount += 1;
+    if (won === true) {
+      wins++;
+    } else if (won === false) {
+      losses++;
     } else {
-      continue;
+      unknown++;
     }
-
-    kills += me.stats?.kills || me.kills || 0;
-    deaths += me.stats?.deaths || me.deaths || 0;
   }
 
-  const winRate =
-    matchCount > 0 ? round1((wins / matchCount) * 100) : 0;
-
-  const kd =
-    deaths > 0
-      ? (kills / deaths).toFixed(2)
-      : kills > 0
-        ? kills.toFixed(2)
-        : "0.00";
+  const played = competitiveMatches.length;
+  const winRate = played > 0 ? Math.round((wins / played) * 100) : 0;
 
   return {
-    matches: matchCount,
+    played,
     wins,
     losses,
+    unknown,
     winRate,
-    kd
+    matches: competitiveMatches
   };
 }
 
+// ===== 表示 =====
+function formatDate(ms) {
+  if (!ms) return "不明";
+
+  return new Intl.DateTimeFormat("ja-JP", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(ms));
+}
+
+function renderStats(stats, allSaved, added) {
+  setText("matchCount", stats.played);
+  setText("winCount", stats.wins);
+  setText("lossCount", stats.losses);
+  setText("winRate", `${stats.winRate}%`);
+  setText("savedCount", allSaved.length);
+  setText("addedCount", added);
+
+  const latest = stats.matches[0];
+  const latestTime = latest ? getMatchTimestamp(latest) : 0;
+
+  setText("latestMatch", latestTime ? formatDate(latestTime) : "なし");
+  setText("periodText", "集計期間：2026/6/24〜現在");
+
+  const unknownText =
+    stats.unknown > 0 ? ` / 勝敗不明 ${stats.unknown}試合` : "";
+
+  setText(
+    "summaryText",
+    `今Actのコンペは${stats.played}試合、${stats.wins}勝${stats.losses}敗、勝率${stats.winRate}%です${unknownText}。`
+  );
+}
+
+function renderMatchList(matches) {
+  const list = getEl("matchList");
+  if (!list) return;
+
+  if (!matches.length) {
+    list.innerHTML = `<p class="muted">まだ試合データがありません。</p>`;
+    return;
+  }
+
+  const html = matches.slice(0, 15).map(match => {
+    const won = didMyTeamWin(match);
+    const resultText = won === true ? "WIN" : won === false ? "LOSS" : "UNKNOWN";
+    const resultClass = won === true ? "win" : won === false ? "loss" : "unknown";
+
+    const map = getMapName(match);
+    const date = formatDate(getMatchTimestamp(match));
+
+    return `
+      <div class="match-item">
+        <div class="match-result ${resultClass}">${resultText}</div>
+        <div>
+          <div class="match-map">${map}</div>
+          <div class="match-date">${date}</div>
+        </div>
+        <div class="match-date">Competitive</div>
+      </div>
+    `;
+  }).join("");
+
+  list.innerHTML = html;
+}
+
+// ===== メイン処理 =====
 async function main() {
   try {
-    const mmrJson = await fetchCurrentMMR();
-    const historyJson = await fetchMMRHistory();
-    const matchesJson = await fetchMatches();
+    setText("statusText", "取得中...");
 
-    console.log("matchesJson", matchesJson);
+    const saved = loadSavedMatches();
+    const latest = await fetchLatestMatches();
 
-    const currentData = mmrJson.data.current_data;
+    console.log("保存済み:", saved.length);
+    console.log("今回取得:", latest.length);
 
-    const currentRank = currentData.currenttierpatched;
-    const currentRR = currentData.ranking_in_tier;
+    const { merged, added } = mergeMatches(saved, latest);
 
-    const rrStats = getRRStats(historyJson);
-    const actStats = getActMatchStats(matchesJson);
+    saveMatches(merged);
 
-    const result = calculateProgress(
-      currentRank,
-      currentRR,
-      rrStats.avgWinRR
-    );
+    const actMatches = filterActMatches(merged);
+    const stats = calculateStats(actMatches);
 
-    setText("topRank", currentRank);
-    setText("topRR", `${currentRR} RR`);
-    setText("topWinRate", `${actStats.winRate}%`);
-    setText("topKD", actStats.kd);
+    console.log("保存後合計:", merged.length);
+    console.log("今Act対象:", actMatches.length);
+    console.log("集計結果:", stats);
 
-    setText("challengeDays", `${result.remainingDays}日`);
-    setText("challengeRequiredRR", `${result.requiredRR} RR`);
-
-    setText("dailyRequiredRR", `${result.dailyRequiredRR} RR/日`);
-    setText("dailyRequiredWins", `${result.dailyRequiredWins} 勝/日`);
-
-    setText("weeklyRequiredRR", `${result.weeklyRequiredRR} RR/週`);
-    setText("weeklyRequiredWins", `${result.weeklyRequiredWins} 勝/週`);
-
-    setText("seasonMatches", `${actStats.matches}試合`);
-    setText("seasonWinRate", `${actStats.winRate}%`);
-    setText("seasonWins", `${actStats.wins}勝`);
-    setText("seasonLosses", `${actStats.losses}敗`);
-
-    setText("seasonAvgWinRR", `+${rrStats.avgWinRR}RR`);
-    setText("seasonAvgLossRR", `${rrStats.avgLossRR}RR`);
-
-    const today = new Date();
-    const actStart = new Date(CONFIG.actStartDate);
+    renderStats(stats, merged, added);
+    renderMatchList(stats.matches);
 
     setText(
-      "seasonPeriod",
-      `集計期間：${formatDate(actStart)}〜${formatDate(today)}`
+      "statusText",
+      `更新完了：新規${added}試合追加 / 保存済み${merged.length}試合`
     );
 
-    setText(
-      "message",
-      `今Actの勝率・KD・試合数はマッチ履歴から計算しています。必要勝利数は勝利時平均 +${rrStats.avgWinRR}RR で計算しています。`
-    );
   } catch (error) {
     console.error(error);
-
-    setText(
-      "message",
-      "ランク情報の取得に失敗しました。Riot ID、タグ、APIキー、regionを確認してください。"
-    );
-
-    setText("topRank", "取得失敗");
-    setText("topRR", "- RR");
-    setText("topWinRate", "-");
-    setText("topKD", "-");
+    setText("statusText", "取得エラー。Consoleを確認してください。");
   }
 }
 
-main();
+// ===== ボタン =====
+document.addEventListener("DOMContentLoaded", () => {
+  const reloadButton = getEl("reloadButton");
+  const resetButton = getEl("resetButton");
+
+  if (reloadButton) {
+    reloadButton.addEventListener("click", main);
+  }
+
+  if (resetButton) {
+    resetButton.addEventListener("click", clearSavedMatches);
+  }
+
+  main();
+});
