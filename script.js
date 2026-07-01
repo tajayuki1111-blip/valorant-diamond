@@ -27,7 +27,7 @@ const CONFIG = {
   maxSavedMatches: 300,
 
   // Diamond 1のHenrik elo目安
-  // Bronze 3 63RRでDiamond 1まで約1237RRになるように 2100 で設定
+  // 今の表示でDiamond 1までの必要RRが大きめに出るように調整
   targetElo: 2100,
 
   storageKey: "valorant_matches_cache_challenge_v2"
@@ -626,6 +626,7 @@ function renderChallenge(challenge) {
   setText("bigCurrentRank", challenge.currentRank);
   setText("bigCurrentRR", challenge.currentRR);
   setText("bigRemainingRR", challenge.remainingRR);
+  setText("topRemainingRR", challenge.remainingRR);
 
   setText("currentRR", challenge.currentRR);
   setText("remainingRR", challenge.remainingRR);
