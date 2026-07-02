@@ -1,8 +1,6 @@
 // ===============================
 // VALORANT Diamond Challenge
 // Henrik API + localStorage
-// 必要RRは「ランク名 + 現在RR」から計算
-// 到達予定日は「直近10試合の平均RR × 入力ペース」で計算
 // ===============================
 
 const CONFIG = {
@@ -21,7 +19,7 @@ const CONFIG = {
   fetchSize: 50,
   maxSavedMatches: 300,
 
-  storageKey: "valorant_matches_cache_challenge_v10"
+  storageKey: "valorant_matches_cache_challenge_v12"
 };
 
 let lastChallenge = null;
@@ -67,6 +65,23 @@ function getEl(id) {
   return document.getElementById(id);
 }
 
+function removeOldFormulaUI() {
+  const bannedText = "計算" + "式";
+
+  document.querySelectorAll("#calcDetail, .calc-detail").forEach(el => {
+    el.remove();
+  });
+
+  document.querySelectorAll("*").forEach(el => {
+    const text = el.textContent || "";
+    const isLeaf = el.children.length === 0;
+
+    if (isLeaf && text.includes(bannedText)) {
+      el.remove();
+    }
+  });
+}
+
 // ===============================
 // localStorage
 // ===============================
@@ -104,6 +119,7 @@ function clearSavedMatches() {
   localStorage.removeItem("valorant_matches_cache_challenge_v7");
   localStorage.removeItem("valorant_matches_cache_challenge_v8");
   localStorage.removeItem("valorant_matches_cache_challenge_v10");
+  localStorage.removeItem("valorant_matches_cache_challenge_v12");
 
   location.reload();
 }
@@ -419,7 +435,7 @@ function calculateRecentMatchStats(matches) {
 }
 
 // ===============================
-// ランク・必要RR計算
+// ランク・必要RR
 // ===============================
 
 function normalizeRankName(rankName) {
@@ -489,7 +505,7 @@ function calculateRemainingRR(currentRank, currentRR) {
 }
 
 // ===============================
-// RR履歴計算
+// RR履歴
 // ===============================
 
 function getRRChange(item) {
@@ -551,7 +567,7 @@ function calculateRRStats(mmrHistory) {
 }
 
 // ===============================
-// チャレンジ計算
+// チャレンジ
 // ===============================
 
 function calculateChallenge(mmr, mmrHistory) {
@@ -740,6 +756,8 @@ function renderChallenge(challenge) {
   setText("challengeNote", result.note);
   setText("paceArrivalDate", result.note);
   setText("paceResultStatus", result.resultText);
+
+  removeOldFormulaUI();
 }
 
 function renderMatchList(matches) {
@@ -783,6 +801,7 @@ function renderMatchList(matches) {
 
 async function main() {
   try {
+    removeOldFormulaUI();
     setText("statusText", "取得中...");
 
     const saved = loadSavedMatches();
@@ -808,9 +827,12 @@ async function main() {
       `更新完了：新規${added}試合追加 / 保存済み${merged.length}試合`
     );
 
+    removeOldFormulaUI();
+
   } catch (error) {
     console.error(error);
     setText("statusText", `取得エラー：${error.message}`);
+    removeOldFormulaUI();
   }
 }
 
@@ -836,9 +858,11 @@ function setup() {
       if (lastChallenge) {
         renderChallenge(lastChallenge);
       }
+      removeOldFormulaUI();
     });
   }
 
+  removeOldFormulaUI();
   main();
 }
 
