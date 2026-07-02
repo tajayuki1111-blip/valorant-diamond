@@ -738,3 +738,19 @@ button.danger {
     font-size: 56px;
   }
 }
+/* ===============================
+   Calculation detail
+================================ */
+
+.calc-detail {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(2, 6, 23, 0.52);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  color: #cbd5e1;
+  font-size: 15px;
+  font-weight: 850;
+  line-height: 1.65;
+  white-space: pre-line;
+}
