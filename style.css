@@ -780,3 +780,130 @@ button.danger {
     font-size: 56px;
   }
 }
+@media (max-width: 1160px) {
+  html {
+    overflow-x: hidden;
+  }
+
+  body.desktop-scale-mode {
+    overflow-x: hidden;
+    min-width: 0;
+  }
+
+  body.desktop-scale-mode .app {
+    width: 1160px !important;
+    max-width: none !important;
+    min-width: 1160px !important;
+    margin: 0 !important;
+    padding: 32px 0 48px !important;
+    transform: scale(var(--mobile-scale, 1));
+    transform-origin: top left;
+  }
+
+  body.desktop-scale-mode .stream-hero {
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 34px !important;
+  }
+
+  body.desktop-scale-mode .hero-main h1 {
+    font-size: 64px !important;
+    line-height: 1.08 !important;
+  }
+
+  body.desktop-scale-mode .hero-main h1 .title-ja {
+    font-size: 0.72em !important;
+    margin-top: 8px !important;
+  }
+
+  body.desktop-scale-mode .stream-badge {
+    min-width: 210px !important;
+    max-width: 240px !important;
+    text-align: right !important;
+  }
+
+  body.desktop-scale-mode .stream-badge strong {
+    font-size: 28px !important;
+  }
+
+  body.desktop-scale-mode .dashboard-hero {
+    grid-template-columns: 1.25fr 1fr 1fr !important;
+  }
+
+  body.desktop-scale-mode .countdown-panel,
+  body.desktop-scale-mode .result-panel,
+  body.desktop-scale-mode .arrival-panel {
+    min-height: 215px !important;
+  }
+
+  body.desktop-scale-mode .metric-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  body.desktop-scale-mode .compact-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  body.desktop-scale-mode .forecast-strip {
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+
+  body.desktop-scale-mode .section-head {
+    flex-direction: row !important;
+  }
+
+  body.desktop-scale-mode .section-head > p {
+    text-align: right !important;
+  }
+
+  body.desktop-scale-mode .pace-box.redesigned {
+    grid-template-columns: 1fr 1fr auto !important;
+  }
+
+  body.desktop-scale-mode #calcPaceButton {
+    width: auto !important;
+  }
+
+  body.desktop-scale-mode .action-card {
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+
+  body.desktop-scale-mode .action-card p {
+    margin-left: auto !important;
+  }
+
+  body.desktop-scale-mode .match-item {
+    grid-template-columns: 90px 1fr 90px !important;
+  }
+
+  body.desktop-scale-mode .days-main {
+    font-size: 96px !important;
+  }
+
+  body.desktop-scale-mode .rank-main {
+    font-size: 72px !important;
+  }
+
+  body.desktop-scale-mode .required-main span {
+    font-size: 88px !important;
+  }
+
+  body.desktop-scale-mode .compact-stats strong {
+    font-size: 42px !important;
+  }
+
+  body.desktop-scale-mode .metric-card strong {
+    font-size: 42px !important;
+  }
+
+  body.desktop-scale-mode .record-line b,
+  body.desktop-scale-mode .record-line small {
+    font-size: 42px !important;
+  }
+
+  body.desktop-scale-mode .value-unit b {
+    font-size: 46px !important;
+  }
+}
