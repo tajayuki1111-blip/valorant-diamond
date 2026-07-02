@@ -14,7 +14,7 @@ const CONFIG = {
   fetchSize: 50,
   maxSavedMatches: 300,
 
-  storageKey: "valorant_matches_cache_challenge_v13"
+  storageKey: "valorant_matches_cache_challenge_v14"
 };
 
 let lastChallenge = null;
@@ -89,6 +89,28 @@ function removeOldFormulaUI() {
   });
 }
 
+function applyDesktopScaleOnMobile() {
+  const app = document.querySelector(".app");
+  if (!app) return;
+
+  const baseWidth = 1160;
+  const windowWidth = window.innerWidth;
+
+  if (windowWidth < baseWidth) {
+    const scale = windowWidth / baseWidth;
+
+    document.body.classList.add("desktop-scale-mode");
+    document.documentElement.style.setProperty("--mobile-scale", scale);
+
+    const scaledHeight = app.scrollHeight * scale;
+    document.body.style.height = `${scaledHeight}px`;
+  } else {
+    document.body.classList.remove("desktop-scale-mode");
+    document.documentElement.style.removeProperty("--mobile-scale");
+    document.body.style.height = "";
+  }
+}
+
 function loadSavedMatches() {
   try {
     const raw = localStorage.getItem(CONFIG.storageKey);
@@ -124,6 +146,7 @@ function clearSavedMatches() {
   localStorage.removeItem("valorant_matches_cache_challenge_v10");
   localStorage.removeItem("valorant_matches_cache_challenge_v12");
   localStorage.removeItem("valorant_matches_cache_challenge_v13");
+  localStorage.removeItem("valorant_matches_cache_challenge_v14");
 
   location.reload();
 }
@@ -746,6 +769,7 @@ function renderChallenge(challenge) {
   setStatusText("paceResultStatus", paceResult.resultText, paceResult.status);
 
   removeOldFormulaUI();
+  applyDesktopScaleOnMobile();
 }
 
 function renderMatchList(matches) {
@@ -786,6 +810,7 @@ function renderMatchList(matches) {
 async function main() {
   try {
     removeOldFormulaUI();
+    applyDesktopScaleOnMobile();
     setText("statusText", "取得中...");
 
     const saved = loadSavedMatches();
@@ -812,11 +837,13 @@ async function main() {
     );
 
     removeOldFormulaUI();
+    applyDesktopScaleOnMobile();
 
   } catch (error) {
     console.error(error);
     setText("statusText", `取得エラー：${error.message}`);
     removeOldFormulaUI();
+    applyDesktopScaleOnMobile();
   }
 }
 
@@ -838,9 +865,15 @@ function setup() {
       if (lastChallenge) {
         renderChallenge(lastChallenge);
       }
+
       removeOldFormulaUI();
+      applyDesktopScaleOnMobile();
     });
   }
+
+  applyDesktopScaleOnMobile();
+  window.addEventListener("resize", applyDesktopScaleOnMobile);
+  window.addEventListener("orientationchange", applyDesktopScaleOnMobile);
 
   removeOldFormulaUI();
   main();
