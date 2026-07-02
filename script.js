@@ -2,6 +2,7 @@
 // VALORANT Diamond Challenge
 // Henrik API + localStorage
 // 必要RRは「ランク名 + 現在RR」から計算
+// 到達予定日は「今の直近10試合ベース」で計算
 // ===============================
 
 const CONFIG = {
@@ -14,15 +15,16 @@ const CONFIG = {
   challengeEnd: "2026-09-01T23:59:59+09:00",
   targetRank: "Diamond 1",
 
+  // 平均RR/試合・直近試合データは直近10試合
   recentMatchCount: 10,
 
-  // 勝利時平均RR・敗北時平均RRはそれぞれ直近5試合で計算
+  // 勝利時平均RR・敗北時平均RRはそれぞれ直近5試合
   recentWinLossRRCount: 5,
 
   fetchSize: 50,
   maxSavedMatches: 300,
 
-  storageKey: "valorant_matches_cache_challenge_v5"
+  storageKey: "valorant_matches_cache_challenge_v6"
 };
 
 let lastChallenge = null;
@@ -101,6 +103,7 @@ function clearSavedMatches() {
   localStorage.removeItem("valorant_matches_cache_challenge_v3");
   localStorage.removeItem("valorant_matches_cache_challenge_v4");
   localStorage.removeItem("valorant_matches_cache_challenge_v5");
+  localStorage.removeItem("valorant_matches_cache_challenge_v6");
 
   location.reload();
 }
@@ -603,21 +606,27 @@ function calculateArrivalDate(challenge) {
   if (!challenge || challenge.remainingRR <= 0) {
     return {
       status: "到達済み",
-      note: "到達予定日：到達済み\nチャレンジ成功"
+      note: "到達済み",
+      detail: "計算式：すでにDiamond 1以上に到達しています。"
     };
   }
 
   if (challenge.avgRRPerMatch <= 0) {
     return {
       status: "到達不可",
-      note: "到達予定日：算出不可\nチャレンジ失敗"
+      note: "算出不可",
+      detail:
+        `計算式：\n` +
+        `必要RR ${challenge.remainingRR}RR ÷ 平均RR ${challenge.avgRRPerMatch}RR/試合\n` +
+        `平均RRが0以下のため、このペースではRRが増えません。`
     };
   }
 
   if (playDaysPerWeek <= 0 || matchesPerDay <= 0) {
     return {
       status: "入力不足",
-      note: "到達予定日：入力不足\n週日数と試合数を入力"
+      note: "入力不足",
+      detail: "計算式：週日数と1日試合数を入力してください。"
     };
   }
 
@@ -627,7 +636,12 @@ function calculateArrivalDate(challenge) {
   if (expectedRRPerWeek <= 0) {
     return {
       status: "到達不可",
-      note: "到達予定日：算出不可\nチャレンジ失敗"
+      note: "算出不可",
+      detail:
+        `計算式：\n` +
+        `${playDaysPerWeek}日/週 × ${matchesPerDay}試合/日 × ${challenge.avgRRPerMatch}RR/試合\n` +
+        `= ${expectedRRPerWeek.toFixed(1)}RR/週\n` +
+        `このペースではRRが増えません。`
     };
   }
 
@@ -648,7 +662,14 @@ function calculateArrivalDate(challenge) {
 
   return {
     status: canReachByDeadline ? "到達可能" : "到達不可",
-    note: `到達予定日：${arrivalText}\nチャレンジ${canReachByDeadline ? "成功" : "失敗"}`
+    note: arrivalText,
+    detail:
+      `計算式：\n` +
+      `${playDaysPerWeek}日/週 × ${matchesPerDay}試合/日 = ${matchesPerWeek}試合/週\n` +
+      `${matchesPerWeek}試合/週 × ${challenge.avgRRPerMatch}RR/試合 = ${expectedRRPerWeek.toFixed(1)}RR/週\n` +
+      `${challenge.remainingRR}RR ÷ ${expectedRRPerWeek.toFixed(1)}RR/週 = ${weeksNeeded.toFixed(1)}週\n` +
+      `約${daysNeeded}日後に到達予定\n` +
+      `チャレンジ${canReachByDeadline ? "成功" : "失敗"}`
   };
 }
 
@@ -730,6 +751,7 @@ function renderChallenge(challenge) {
   }
 
   setText("challengeNote", result.note);
+  setText("calcDetail", result.detail);
 }
 
 function renderMatchList(matches) {
