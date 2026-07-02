@@ -432,6 +432,14 @@ h2 {
   line-height: 1.3;
 }
 
+.pace-result p.ok {
+  color: #22c55e;
+}
+
+.pace-result p.ng {
+  color: #ef4444;
+}
+
 button {
   appearance: none;
   border: 0;
