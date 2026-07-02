@@ -2,7 +2,7 @@
 // VALORANT Diamond Challenge
 // Henrik API + localStorage
 // 必要RRは「ランク名 + 現在RR」から計算
-// 到達予定日は「今の直近10試合ベース」で計算
+// 到達予定日は「直近10試合の平均RR × 入力ペース」で計算
 // ===============================
 
 const CONFIG = {
@@ -24,7 +24,7 @@ const CONFIG = {
   fetchSize: 50,
   maxSavedMatches: 300,
 
-  storageKey: "valorant_matches_cache_challenge_v6"
+  storageKey: "valorant_matches_cache_challenge_v7"
 };
 
 let lastChallenge = null;
@@ -104,6 +104,7 @@ function clearSavedMatches() {
   localStorage.removeItem("valorant_matches_cache_challenge_v4");
   localStorage.removeItem("valorant_matches_cache_challenge_v5");
   localStorage.removeItem("valorant_matches_cache_challenge_v6");
+  localStorage.removeItem("valorant_matches_cache_challenge_v7");
 
   location.reload();
 }
@@ -514,12 +515,15 @@ function calculateRRStats(mmrHistory) {
     .map(item => getRRChange(item))
     .filter(n => n !== 0);
 
+  // 平均RR/試合は直近10試合
   const recentChanges = changes.slice(0, CONFIG.recentMatchCount);
 
+  // 勝利時平均RRは直近の勝利5試合
   const recentWins = changes
     .filter(n => n > 0)
     .slice(0, CONFIG.recentWinLossRRCount);
 
+  // 敗北時平均RRは直近の敗北5試合
   const recentLosses = changes
     .filter(n => n < 0)
     .slice(0, CONFIG.recentWinLossRRCount);
@@ -750,7 +754,11 @@ function renderChallenge(challenge) {
     }
   }
 
+  // 上の大きい欄
   setText("challengeNote", result.note);
+
+  // 必要ペース欄の下に出す結果
+  setText("paceArrivalDate", result.note);
   setText("calcDetail", result.detail);
 }
 
