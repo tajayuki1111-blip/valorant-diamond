@@ -21,7 +21,7 @@ const CONFIG = {
   fetchSize: 50,
   maxSavedMatches: 300,
 
-  storageKey: "valorant_matches_cache_challenge_v8"
+  storageKey: "valorant_matches_cache_challenge_v10"
 };
 
 let lastChallenge = null;
@@ -103,6 +103,7 @@ function clearSavedMatches() {
   localStorage.removeItem("valorant_matches_cache_challenge_v6");
   localStorage.removeItem("valorant_matches_cache_challenge_v7");
   localStorage.removeItem("valorant_matches_cache_challenge_v8");
+  localStorage.removeItem("valorant_matches_cache_challenge_v10");
 
   location.reload();
 }
